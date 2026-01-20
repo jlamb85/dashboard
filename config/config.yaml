@@ -1,0 +1,88 @@
+server_address: "0.0.0.0:8080"  # Default to all interfaces - override with SERVER_ADDRESS or SERVER_HOST:SERVER_PORT
+monitoring_interval: 30  # seconds
+
+environment: "development"  # Set to "production" or use ENVIRONMENT env var
+
+# Logging Configuration - override with LOG_DIRECTORY, LOG_LEVEL, LOG_MAX_SIZE, LOG_MAX_BACKUPS, LOG_MAX_AGE env vars
+logging:
+  directory: "./logs"  # Log file directory (relative path for dev, /var/log/server-dashboard for production)
+  level: "info"  # Log level: debug, info, warn, error
+  max_size_mb: 100  # Maximum size in megabytes before rotation
+  max_backups: 5  # Maximum number of old log files to retain
+  max_age_days: 30  # Maximum number of days to retain old log files
+  compress: true  # Compress rotated log files
+
+# Authentication - override with AUTH_USERNAME, AUTH_PASSWORD, AUTH_ENABLED env vars
+auth:
+  enabled: true  # Set to false to disable auth
+  username: "${AUTH_USERNAME:admin}"  # Default to 'admin', override with env var
+  password: "${AUTH_PASSWORD:change_me_in_production}"  # MUST change in production
+
+# TLS/HTTPS Configuration - override with TLS_ENABLED, TLS_CERT_FILE, TLS_KEY_FILE env vars
+tls:
+  enabled: false  # Set to true for HTTPS
+  cert_file: "/etc/dashboard/certs/server.crt"
+  key_file: "/etc/dashboard/certs/server.key"
+
+servers:
+  - id: "srv001"
+    name: "Web Server 1"
+    ip_address: "192.168.1.10"
+    hostname: "webserver1.local"
+    port: 22
+    enabled: true
+  - id: "srv002"
+    name: "App Server 1"
+    ip_address: "192.168.1.11"
+    hostname: "appserver1.local"
+    port: 22
+    enabled: true
+  - id: "srv003"
+    name: "Database Server"
+    ip_address: "192.168.1.12"
+    hostname: "dbserver.local"
+    port: 22
+    enabled: true
+
+virtual_machines:
+  - id: "vm001"
+    name: "Web Server VM"
+    ip_address: "10.0.0.1"
+    hostname: "webvm.local"
+    port: 22
+    host_server_id: "srv001"
+    enabled: true
+    stream_ports: [6501, 6502]  # Optional: Ports for video/media streams
+  - id: "vm002"
+    name: "App Server VM"
+    ip_address: "10.0.0.2"
+    hostname: "appvm.local"
+    port: 22
+    host_server_id: "srv002"
+    enabled: true
+    stream_ports: [6503]  # Optional: Port for video/media stream
+  - id: "vm003"
+    name: "Database VM"
+    ip_address: "10.0.0.3"
+    hostname: "dbvm.local"
+    port: 22
+    host_server_id: "srv003"
+    enabled: true
+    # No stream_ports - streaming not enabled for this VM
+
+monitoring:
+  ping_timeout_seconds: 2
+  disk_threshold_percent: 80
+  check_processes: true
+  check_disk_space: true
+  check_uptime: true
+  use_mock_data: true  # Set to false for production (use real SSH queries)
+
+# SSH Configuration for real monitoring (production)
+ssh:
+  enabled: false  # Enable for production monitoring
+  username: "monitor"  # SSH username for remote queries
+  private_key_path: "~/.ssh/id_rsa"  # Path to SSH private key
+  timeout_seconds: 5  # SSH connection timeout
+  # For password auth (not recommended):
+  # password: "${SSH_PASSWORD:}"

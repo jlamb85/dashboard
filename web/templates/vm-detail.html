@@ -1,0 +1,287 @@
+{{ define "vm-detail" }}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM Details - Server Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <header class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item me-2">
+                        <button class="btn btn-sm btn-outline-light d-none d-lg-block" id="sidebar-toggle" title="Toggle sidebar">
+                            <i class="bi bi-layout-sidebar-inset"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-sm btn-outline-light" id="theme-toggle" title="Toggle dark mode">
+                            <i class="bi bi-moon-stars"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid flex-grow-1 py-4">
+        <div class="row g-3">
+            <nav class="col-lg-2 d-none d-lg-block" id="sidebar-nav">
+                <div class="sidebar">
+                    <ul class="nav flex-column gap-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/" data-page="dashboard">
+                                <i class="bi bi-house-door"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/servers" data-page="servers">
+                                <i class="bi bi-server"></i> Servers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/vms" data-page="vms">
+                                <i class="bi bi-cpu"></i> Virtual Machines
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="small text-muted">
+                        <p class="mb-2"><strong>System Status</strong></p>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-success" id="status-indicator">Active</span>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <main role="main" class="col-lg-10" id="main-content">
+                <div class="mb-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h3 fw-bold">
+                            <i class="bi bi-cpu"></i> {{ .vm.Name }}
+                        </h2>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-globe"></i> {{ .vm.IPAddress }}
+                        </p>
+                    </div>
+                    <a href="/vms" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to VMs
+                    </a>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary bg-opacity-10">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-info-circle"></i> VM Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-item">
+                                    <div class="info-label">VM ID</div>
+                                    <div class="info-value text-monospace">{{ .vm.ID }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Hostname</div>
+                                    <div class="info-value">{{ .vm.Hostname }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Port</div>
+                                    <div class="info-value">{{ .vm.Port }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Host Server</div>
+                                    <div class="info-value">
+                                        {{ if .hostServer }}
+                                            <a href="/servers/{{ .hostServer.ID }}" class="text-decoration-none">
+                                                <i class="bi bi-hdd-network"></i> {{ .hostServer.Name }}
+                                            </a>
+                                        {{ else }}
+                                            <span class="text-muted">Unassigned</span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Status</div>
+                                    <div class="info-value">
+                                        {{ if eq .vm.Status "running" }}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-circle-fill"></i> Running
+                                            </span>
+                                        {{ else }}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-circle-fill"></i> Offline
+                                            </span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success bg-opacity-10">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-speedometer2"></i> System Metrics
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-item">
+                                    <div class="info-label">Uptime</div>
+                                    <div class="info-value">{{ .vm.Uptime }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Running Processes</div>
+                                    <div class="info-value">{{ .vm.Processes }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Disk Usage</div>
+                                    <div class="info-value">
+                                        {{ if gt .vm.DiskPercent 80.0 }}
+                                            <span class="badge bg-danger">{{ printf "%.1f" .vm.DiskPercent }}%</span>
+                                        {{ else if gt .vm.DiskPercent 70.0 }}
+                                            <span class="badge bg-warning text-dark">{{ printf "%.1f" .vm.DiskPercent }}%</span>
+                                        {{ else }}
+                                            <span class="badge bg-success">{{ printf "%.1f" .vm.DiskPercent }}%</span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Last Checked</div>
+                                    <div class="info-value text-muted">{{ .vm.LastChecked.Format "15:04:05" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3 class="h5 fw-bold mb-3">
+                        <i class="bi bi-hdd-rack"></i> Disk Space Details
+                    </h3>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="info-item">
+                                <div class="info-label">Total Disk Space</div>
+                                <div class="info-value">{{ .vm.DiskTotal }}GB</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-item">
+                                <div class="info-label">Used Disk Space</div>
+                                <div class="info-value">{{ .vm.DiskUsage }}GB</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-item">
+                                <div class="info-label">Disk Usage %</div>
+                                <div class="info-value">{{ printf "%.2f" .vm.DiskPercent }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{ if gt (len .vm.StreamPorts) 0 }}
+                <div class="detail-section">
+                    <h3 class="h5 fw-bold mb-3">
+                        <i class="bi bi-broadcast"></i> Stream Viewer
+                        {{ $activeCount := 0 }}
+                        {{ range .vm.Streams }}
+                            {{ if .Active }}
+                                {{ $activeCount = add $activeCount 1 }}
+                            {{ end }}
+                        {{ end }}
+                        {{ if gt $activeCount 0 }}
+                            <span class="badge bg-success ms-2">{{ $activeCount }} Live</span>
+                        {{ else }}
+                            <span class="badge bg-secondary ms-2">Offline</span>
+                        {{ end }}
+                    </h3>
+                    
+                    <div class="accordion" id="streamAccordion">
+                        {{ range $index, $stream := .vm.Streams }}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingStream{{ $stream.Port }}">
+                                <button class="accordion-button {{ if not $stream.Active }}collapsed{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStream{{ $stream.Port }}" aria-expanded="{{ if $stream.Active }}true{{ else }}false{{ end }}" aria-controls="collapseStream{{ $stream.Port }}">
+                                    <i class="bi bi-camera-video me-2"></i> Stream on Port {{ $stream.Port }}
+                                    {{ if $stream.Active }}
+                                        <span class="badge bg-success ms-2">Live</span>
+                                    {{ else }}
+                                        <span class="badge bg-secondary ms-2">Offline</span>
+                                    {{ end }}
+                                </button>
+                            </h2>
+                            <div id="collapseStream{{ $stream.Port }}" class="accordion-collapse collapse {{ if $stream.Active }}show{{ end }}" aria-labelledby="headingStream{{ $stream.Port }}" data-bs-parent="#streamAccordion">
+                                <div class="accordion-body">
+                                    {{ if $stream.Active }}
+                                        <div class="ratio ratio-16x9 bg-dark rounded">
+                                            <iframe 
+                                                src="http://localhost:{{ $stream.Port }}" 
+                                                allowfullscreen
+                                                class="border-0">
+                                            </iframe>
+                                        </div>
+                                        <div class="mt-3 text-center">
+                                            <a href="http://localhost:{{ $stream.Port }}" target="_blank" class="btn btn-primary">
+                                                <i class="bi bi-box-arrow-up-right"></i> Open in New Window
+                                            </a>
+                                            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                                            </button>
+                                        </div>
+                                    {{ else }}
+                                        <div class="alert alert-info mb-0" role="alert">
+                                            <i class="bi bi-info-circle"></i> No active stream detected on port {{ $stream.Port }}. The stream may be offline or not configured.
+                                        </div>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        </div>
+                        {{ end }}
+                    </div>
+                </div>
+                {{ end }}
+            </main>
+            </div>
+        </div>
+
+        <!-- Footer - Sticky at bottom -->
+        <footer class="footer mt-auto py-3 bg-body-secondary border-top">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-md-4 text-muted">
+                        <small>&copy; {{ currentYear }} Server Dashboard</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <small class="text-muted">
+                            <i class="bi bi-heart-fill text-danger"></i> Made with passion
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <small class="text-muted">
+                            <i class="bi bi-code-square"></i> {{ appVersion }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="/static/js/dashboard.js"></script>
+    </body>
+</html>
+{{ end }}

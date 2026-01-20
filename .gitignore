@@ -1,0 +1,27 @@
+# Binaries
+server-dashboard
+server-dashboard-*
+*.exe
+
+# Build output
+build/
+
+# Logs
+logs/
+*.log
+nohup.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+test_stream
+coverage.out
