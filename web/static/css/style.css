@@ -113,6 +113,12 @@ body {
     gap: 0.75rem;
 }
 
+.nav-link .badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+}
+
 .nav-link i {
     font-size: 1.1rem;
 }

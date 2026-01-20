@@ -53,11 +53,13 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/servers" data-page="servers">
                                 <i class="bi bi-server"></i> Servers
+                                <span class="badge bg-primary ms-auto">{{ getServerCount }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/vms" data-page="vms">
                                 <i class="bi bi-cpu"></i> Virtual Machines
+                                <span class="badge bg-info ms-auto">{{ getVMCount }}</span>
                             </a>
                         </li>
                     </ul>
