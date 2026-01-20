@@ -19,8 +19,7 @@ The Server Dashboard is a web application designed to monitor and manage servers
 ## Project Structure
 ```
 server-dashboard
-├── cmd
-│   └── main.go                # Entry point of the application
+├── main.go                      # Entry point of the application
 ├── internal
 │   ├── config
 │   │   └── config.go          # Configuration loading and parsing
@@ -33,7 +32,8 @@ server-dashboard
 │   │   └── vm.go               # VM data model
 │   ├── services
 │   │   ├── monitor.go          # Monitoring services for servers and VMs
-│   │   └── network.go          # Network discovery services
+│   │   ├── network.go          # Network discovery services
+│   │   └── stream.go           # Stream detection service
 │   └── middleware
 │       └── auth.go             # Authentication middleware
 ├── web
@@ -46,9 +46,17 @@ server-dashboard
 │       ├── base.html           # Base HTML template
 │       ├── dashboard.html       # Dashboard view template
 │       ├── servers.html         # Servers list template
-│       └── vms.html             # VMs list template
+│       ├── server-detail.html   # Server detail view
+│       ├── vms.html             # VMs list template
+│       └── vm-detail.html       # VM detail view with stream viewer
+├── tools
+│   └── hashpass               # Password hashing utility
+│       ├── main.go            # Hash generator
+│       └── README.md          # Usage documentation
 ├── config
 │   └── config.yaml             # Configuration settings
+├── logs                         # Log files (development)
+│   └── server-dashboard.log    # Application logs
 ├── go.mod                       # Module dependencies
 ├── go.sum                       # Module checksums
 ├── Makefile                     # Build instructions
@@ -130,7 +138,7 @@ The dashboard collects the following real-time metrics via SSH:
 ## Running the Application
 To run the application, execute the following command:
 ```
-go run cmd/main.go
+go run main.go
 ```
 The application will start a web server, and you can access the dashboard at `http://localhost:8080`.
 
@@ -139,7 +147,7 @@ The application will start a web server, and you can access the dashboard at `ht
 ### Quick Build
 ```bash
 # Build for current platform
-go build -o server-dashboard ./cmd/main.go
+go build -o server-dashboard main.go
 
 # Run the binary
 ./server-dashboard
