@@ -98,6 +98,12 @@ func InitializeCache(cfg *config.Config) {
 	stopMonitoring = make(chan bool, 1)
 	isMonitoring = true
 	
+	// Run initial monitoring check immediately (non-blocking)
+	go func() {
+		MonitorAllServers()
+		MonitorAllVMs()
+	}()
+	
 	// Start background monitoring in goroutine to avoid blocking initialization
 	go StartBackgroundMonitoring()
 }
