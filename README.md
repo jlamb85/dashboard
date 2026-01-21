@@ -8,7 +8,7 @@ The Server Dashboard is a web application designed to monitor and manage servers
 - User-friendly dashboard with an overview of system health
 - Detailed views for servers and VMs
 - **Monitoring controls** - Start/stop/restart monitoring from UI
-- **Stoplight status indicators** - Color-coded health status (green/yellow/red)
+- **Stoplight status indicators** - X/Y online format with color coding (red=0, yellow=partial, green=all)
 - **Stream viewer** - View video/media streams from VMs (configurable ports)
 - **Bcrypt password hashing** - Secure authentication with password hash utility
 - **Enhanced logging** - Configurable file logging with automatic rotation
