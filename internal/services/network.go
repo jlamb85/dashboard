@@ -93,8 +93,8 @@ func InitializeCache(cfg *config.Config) {
 		VMsCache[i] = *vm
 	}
 	
-	// Set monitoring interval (default 30 seconds)
-	monitoringInterval = 30 * time.Second
+	// Set monitoring interval (default 5 seconds)
+	monitoringInterval = 5 * time.Second
 	stopMonitoring = make(chan bool, 1)
 	isMonitoring = true
 	
