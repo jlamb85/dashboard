@@ -60,9 +60,20 @@
                     </ul>
                     <hr>
                     <div class="small text-muted">
-                        <p class="mb-2"><strong>System Status</strong></p>
-                        <div class="d-flex gap-2">
-                            <span class="badge bg-success" id="status-indicator">Active</span>
+                        <p class="mb-2"><strong>Monitoring Status</strong></p>
+                        <div class="d-flex flex-column gap-2" id="monitoring-controls">
+                            <span class="badge" id="monitoring-status">Checking...</span>
+                            <div class="btn-group-vertical btn-group-sm">
+                                <button class="btn btn-outline-success" id="start-monitoring" title="Start monitoring">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                <button class="btn btn-outline-danger" id="stop-monitoring" title="Stop monitoring">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                                <button class="btn btn-outline-warning" id="restart-monitoring" title="Restart monitoring">
+                                    <i class="bi bi-arrow-clockwise"></i> Restart
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -77,39 +88,129 @@
 
                 <!-- Summary Cards -->
                 <div class="row g-3 mb-4">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card status-card h-100">
                             <div class="card-body">
-                                <div class="card-title">Total Servers</div>
+                                <div class="card-title d-flex justify-content-between align-items-center">
+                                    <span>Servers</span>
+                                    <i class="bi bi-server text-primary"></i>
+                                </div>
                                 <div class="metric-value">{{ len .servers }}</div>
-                                <small class="text-muted">
-                                    <i class="bi bi-info-circle"></i> Configured systems
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card status-card h-100">
-                            <div class="card-body">
-                                <div class="card-title">Total VMs</div>
-                                <div class="metric-value">{{ len .vms }}</div>
-                                <small class="text-muted">
-                                    <i class="bi bi-info-circle"></i> Virtual machines
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card status-card h-100">
-                            <div class="card-body">
-                                <div class="card-title">System Status</div>
                                 <div class="mt-2">
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-circle-fill"></i> Monitoring Active
+                                    {{ $healthyServers := 0 }}
+                                    {{ $warningServers := 0 }}
+                                    {{ $downServers := 0 }}
+                                    {{ range .servers }}
+                                        {{ if eq .Status "Healthy" }}{{ $healthyServers = add $healthyServers 1 }}{{ end }}
+                                        {{ if or (eq .Status "Warning") (eq .Status "Degraded") }}{{ $warningServers = add $warningServers 1 }}{{ end }}
+                                        {{ if or (eq .Status "Down") (eq .Status "Error") (eq .Status "Offline") }}{{ $downServers = add $downServers 1 }}{{ end }}
+                                    {{ end }}
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <span class="badge bg-success" title="Healthy">
+                                            <i class="bi bi-circle-fill"></i> {{ $healthyServers }}
+                                        </span>
+                                        {{ if gt $warningServers 0 }}
+                                        <span class="badge bg-warning" title="Warning">
+                                            <i class="bi bi-circle-fill"></i> {{ $warningServers }}
+                                        </span>
+                                        {{ end }}
+                                        {{ if gt $downServers 0 }}
+                                        <span class="badge bg-danger" title="Down/Offline">
+                                            <i class="bi bi-circle-fill"></i> {{ $downServers }}
+                                        </span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="bi bi-hdd-network"></i> Physical servers
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card status-card h-100">
+                            <div class="card-body">
+                                <div class="card-title d-flex justify-content-between align-items-center">
+                                    <span>Virtual Machines</span>
+                                    <i class="bi bi-cpu text-info"></i>
+                                </div>
+                                <div class="metric-value">{{ len .vms }}</div>
+                                <div class="mt-2">
+                                    {{ $healthyVMs := 0 }}
+                                    {{ $warningVMs := 0 }}
+                                    {{ $downVMs := 0 }}
+                                    {{ range .vms }}
+                                        {{ if eq .Status "Healthy" }}{{ $healthyVMs = add $healthyVMs 1 }}{{ end }}
+                                        {{ if or (eq .Status "Warning") (eq .Status "Degraded") }}{{ $warningVMs = add $warningVMs 1 }}{{ end }}
+                                        {{ if or (eq .Status "Down") (eq .Status "Error") (eq .Status "Offline") }}{{ $downVMs = add $downVMs 1 }}{{ end }}
+                                    {{ end }}
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <span class="badge bg-success" title="Healthy">
+                                            <i class="bi bi-circle-fill"></i> {{ $healthyVMs }}
+                                        </span>
+                                        {{ if gt $warningVMs 0 }}
+                                        <span class="badge bg-warning" title="Warning">
+                                            <i class="bi bi-circle-fill"></i> {{ $warningVMs }}
+                                        </span>
+                                        {{ end }}
+                                        {{ if gt $downVMs 0 }}
+                                        <span class="badge bg-danger" title="Down/Offline">
+                                            <i class="bi bi-circle-fill"></i> {{ $downVMs }}
+                                        </span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="bi bi-pc-display"></i> VMs monitored
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card status-card h-100">
+                            <div class="card-body">
+                                <div class="card-title d-flex justify-content-between align-items-center">
+                                    <span>Total Systems</span>
+                                    <i class="bi bi-diagram-3 text-secondary"></i>
+                                </div>
+                                <div class="metric-value">{{ add (len .servers) (len .vms) }}</div>
+                                <div class="mt-2">
+                                    {{ $totalHealthy := add $healthyServers $healthyVMs }}
+                                    {{ $totalWarning := add $warningServers $warningVMs }}
+                                    {{ $totalDown := add $downServers $downVMs }}
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <span class="badge bg-success" title="Healthy">
+                                            <i class="bi bi-circle-fill"></i> {{ $totalHealthy }}
+                                        </span>
+                                        {{ if gt $totalWarning 0 }}
+                                        <span class="badge bg-warning" title="Warning">
+                                            <i class="bi bi-circle-fill"></i> {{ $totalWarning }}
+                                        </span>
+                                        {{ end }}
+                                        {{ if gt $totalDown 0 }}
+                                        <span class="badge bg-danger" title="Down/Offline">
+                                            <i class="bi bi-circle-fill"></i> {{ $totalDown }}
+                                        </span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="bi bi-info-circle"></i> Combined monitoring
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card status-card h-100">
+                            <div class="card-body">
+                                <div class="card-title">Monitoring Status</div>
+                                <div class="mt-2">
+                                    <span class="badge" id="dashboard-monitoring-status">
+                                        <i class="bi bi-circle-fill"></i> <span id="dashboard-monitoring-text">Checking...</span>
                                     </span>
                                 </div>
                                 <small class="text-muted d-block mt-2">
-                                    <i class="bi bi-clock"></i> Real-time monitoring
+                                    <i class="bi bi-clock"></i> <span id="dashboard-monitoring-desc">Real-time monitoring</span>
                                 </small>
                             </div>
                         </div>

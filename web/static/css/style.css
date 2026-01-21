@@ -488,3 +488,47 @@ a:focus, button:focus {
 .footer small i {
     font-size: 0.875rem;
 }
+/* ============================================
+   Stoplight Status Indicators
+   ============================================ */
+
+.badge i.bi-circle-fill {
+    font-size: 0.65rem;
+    margin-right: 0.15rem;
+    vertical-align: middle;
+}
+
+/* Enhanced badge visibility */
+.badge.bg-success {
+    background-color: #198754 !important;
+    box-shadow: 0 0 8px rgba(25, 135, 84, 0.3);
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.3);
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+    box-shadow: 0 0 8px rgba(220, 53, 69, 0.3);
+}
+
+[data-bs-theme="dark"] .badge.bg-warning {
+    background-color: #ffca2c !important;
+    color: #000 !important;
+}
+
+/* Metric value styling for overview cards */
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+    margin: 0.75rem 0;
+}
+
+[data-bs-theme="dark"] .metric-value {
+    color: #667eea;
+}

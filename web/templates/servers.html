@@ -60,9 +60,20 @@
                     </ul>
                     <hr>
                     <div class="small text-muted">
-                        <p class="mb-2"><strong>System Status</strong></p>
-                        <div class="d-flex gap-2">
-                            <span class="badge bg-success" id="status-indicator">Active</span>
+                        <p class="mb-2"><strong>Monitoring Status</strong></p>
+                        <div class="d-flex flex-column gap-2" id="monitoring-controls">
+                            <span class="badge" id="monitoring-status">Checking...</span>
+                            <div class="btn-group-vertical btn-group-sm">
+                                <button class="btn btn-outline-success" id="start-monitoring" title="Start monitoring">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                <button class="btn btn-outline-danger" id="stop-monitoring" title="Stop monitoring">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                                <button class="btn btn-outline-warning" id="restart-monitoring" title="Restart monitoring">
+                                    <i class="bi bi-arrow-clockwise"></i> Restart
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

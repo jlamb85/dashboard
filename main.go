@@ -154,6 +154,12 @@ func main() {
 		handlers.VMDetailHandlerWithTemplates(w, r, templates)
 	}).Methods("GET")
 
+	// Monitoring control API endpoints
+	r.HandleFunc("/api/monitoring/status", handlers.GetMonitoringStatus).Methods("GET")
+	r.HandleFunc("/api/monitoring/start", handlers.StartMonitoring).Methods("POST")
+	r.HandleFunc("/api/monitoring/stop", handlers.StopMonitoring).Methods("POST")
+	r.HandleFunc("/api/monitoring/restart", handlers.RestartMonitoring).Methods("POST")
+
 	// Create HTTP server
 	server := &http.Server{
 		Addr:         cfg.ServerAddress,

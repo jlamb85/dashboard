@@ -276,6 +276,133 @@ const LoadingState = {
 };
 
 // ============================================
+// Monitoring Control
+// ============================================
+
+const MonitoringControl = {
+    init() {
+        this.attachEventListeners();
+        this.updateStatus();
+        // Auto-refresh status every 30 seconds
+        setInterval(() => this.updateStatus(), 30000);
+    },
+
+    async updateStatus() {
+        try {
+            const response = await fetch('/api/monitoring/status');
+            if (!response.ok) {
+                throw new Error('Failed to fetch monitoring status');
+            }
+            const data = await response.json();
+            this.updateUI(data.active);
+        } catch (error) {
+            console.error('Error fetching monitoring status:', error);
+            this.updateUI(null); // Unknown status
+        }
+    },
+
+    updateUI(isActive) {
+        const statusBadge = document.getElementById('monitoring-status');
+        const startBtn = document.getElementById('start-monitoring');
+        const stopBtn = document.getElementById('stop-monitoring');
+        const restartBtn = document.getElementById('restart-monitoring');
+        
+        // Dashboard card elements
+        const dashboardBadge = document.getElementById('dashboard-monitoring-status');
+        const dashboardText = document.getElementById('dashboard-monitoring-text');
+        const dashboardDesc = document.getElementById('dashboard-monitoring-desc');
+
+        if (!statusBadge) return;
+
+        // Restore button HTML if needed
+        if (startBtn && !startBtn.innerHTML.includes('Start')) {
+            startBtn.innerHTML = '<i class="bi bi-play-fill"></i> Start';
+        }
+        if (stopBtn && !stopBtn.innerHTML.includes('Stop')) {
+            stopBtn.innerHTML = '<i class="bi bi-stop-fill"></i> Stop';
+        }
+        if (restartBtn && !restartBtn.innerHTML.includes('Restart')) {
+            restartBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Restart';
+        }
+
+        if (isActive === null) {
+            statusBadge.textContent = 'Unknown';
+            statusBadge.className = 'badge bg-secondary';
+            if (dashboardBadge) dashboardBadge.className = 'badge bg-secondary';
+            if (dashboardText) dashboardText.textContent = 'Unknown';
+            if (dashboardDesc) dashboardDesc.textContent = 'Status unavailable';
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = true;
+            if (restartBtn) restartBtn.disabled = true;
+        } else if (isActive) {
+            statusBadge.textContent = 'Running';
+            statusBadge.className = 'badge bg-success';
+            if (dashboardBadge) dashboardBadge.className = 'badge bg-success';
+            if (dashboardText) dashboardText.textContent = 'Active';
+            if (dashboardDesc) dashboardDesc.textContent = 'Real-time monitoring enabled';
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = false;
+            if (restartBtn) restartBtn.disabled = false;
+        } else {
+            statusBadge.textContent = 'Stopped';
+            statusBadge.className = 'badge bg-danger';
+            if (dashboardBadge) dashboardBadge.className = 'badge bg-danger';
+            if (dashboardText) dashboardText.textContent = 'Stopped';
+            if (dashboardDesc) dashboardDesc.textContent = 'Monitoring is currently disabled';
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
+            if (restartBtn) restartBtn.disabled = true;
+        }
+    },
+
+    async performAction(action, actionName) {
+        try {
+            const response = await fetch(`/api/monitoring/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to ${action} monitoring`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                Notifications.show(data.message, 'success');
+            } else {
+                Notifications.show(data.message, 'danger');
+            }
+            
+            // Update UI with the new state
+            await this.updateStatus();
+        } catch (error) {
+            console.error(`Error ${actionName} monitoring:`, error);
+            Notifications.show(`Failed to ${action} monitoring`, 'danger');
+            await this.updateStatus(); // Refresh status even on error
+        }
+    },
+
+    attachEventListeners() {
+        const startBtn = document.getElementById('start-monitoring');
+        const stopBtn = document.getElementById('stop-monitoring');
+        const restartBtn = document.getElementById('restart-monitoring');
+
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.performAction('start', 'Starting'));
+        }
+        if (stopBtn) {
+            stopBtn.addEventListener('click', () => this.performAction('stop', 'Stopping'));
+        }
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => this.performAction('restart', 'Restarting'));
+        }
+    }
+};
+
+// ============================================
 // Initialization
 // ============================================
 
@@ -285,6 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Navigation.init();
     StatusMonitor.init();
     TableInteraction.init();
+    MonitoringControl.init();
     
     // Global error handler
     window.addEventListener('error', (e) => {
@@ -298,5 +426,6 @@ window.Dashboard = {
     Notifications,
     LoadingState,
     ThemeManager,
-    SidebarManager
+    SidebarManager,
+    MonitoringControl
 };

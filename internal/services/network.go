@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"sync"
 	"time"
 	"server-dashboard/internal/config"
 	"server-dashboard/internal/models"
@@ -17,7 +18,9 @@ var (
 	
 	// Monitoring control
 	monitoringInterval time.Duration
-	stopMonitoring chan bool
+	stopMonitoring     chan bool
+	isMonitoring       bool
+	monitoringMutex    sync.RWMutex
 	
 	// SSH client for real monitoring
 	sshClient *SSHClient
@@ -93,6 +96,7 @@ func InitializeCache(cfg *config.Config) {
 	// Set monitoring interval (default 30 seconds)
 	monitoringInterval = 30 * time.Second
 	stopMonitoring = make(chan bool, 1)
+	isMonitoring = true
 	
 	// Start background monitoring in goroutine to avoid blocking initialization
 	go StartBackgroundMonitoring()
@@ -123,6 +127,51 @@ func StopBackgroundMonitoring() {
 	case stopMonitoring <- true:
 	default:
 	}
+}
+
+// StopMonitoring stops the monitoring service
+func StopMonitoring() error {
+	monitoringMutex.Lock()
+	defer monitoringMutex.Unlock()
+	
+	if !isMonitoring {
+		return nil // Already stopped
+	}
+	
+	StopBackgroundMonitoring()
+	isMonitoring = false
+	return nil
+}
+
+// StartMonitoring starts the monitoring service
+func StartMonitoring() error {
+	monitoringMutex.Lock()
+	defer monitoringMutex.Unlock()
+	
+	if isMonitoring {
+		return nil // Already running
+	}
+	
+	stopMonitoring = make(chan bool, 1) // Reset the channel
+	go StartBackgroundMonitoring()
+	isMonitoring = true
+	return nil
+}
+
+// RestartMonitoring restarts the monitoring service
+func RestartMonitoring() error {
+	if err := StopMonitoring(); err != nil {
+		return err
+	}
+	time.Sleep(100 * time.Millisecond) // Brief pause
+	return StartMonitoring()
+}
+
+// GetMonitoringStatus returns whether monitoring is currently active
+func GetMonitoringStatus() bool {
+	monitoringMutex.RLock()
+	defer monitoringMutex.RUnlock()
+	return isMonitoring
 }
 
 // MonitorAllServers checks status of all servers
