@@ -190,14 +190,23 @@ func MonitorAllVMs() {
 
 // MonitorServer performs health checks on a server
 func MonitorServer(srv *models.Server) {
-	// Check ping status using ICMP
+	// When using mock data, always show as online (no network checks needed)
+	if Config.Monitoring.UseMockData {
+		srv.PingStatus = "online"
+		srv.Status = "online"
+		useServerMockData(srv)
+		srv.LastChecked = time.Now()
+		return
+	}
+	
+	// Production mode: Check ping status using TCP connectivity
 	srv.PingStatus = CheckPingStatus(srv.IPAddress)
 	
 	if srv.PingStatus == "online" {
 		srv.Status = "online"
 		
 		// Use real SSH monitoring if available and configured
-		if !Config.Monitoring.UseMockData && Config.SSH.Enabled && sshClient != nil {
+		if Config.SSH.Enabled && sshClient != nil {
 			err := sshClient.GetRealServerMetrics(srv)
 			if err != nil {
 				// Fallback to mock data on error
@@ -232,14 +241,33 @@ func useServerMockData(srv *models.Server) {
 
 // MonitorVM performs health checks on a VM
 func MonitorVM(vm *models.VM) {
-	// Check ping status using ICMP
+	// When using mock data, always show as online (no network checks needed)
+	if Config.Monitoring.UseMockData {
+		vm.PingStatus = "online"
+		vm.Status = "running"
+		useVMMockData(vm)
+		
+		// Check stream status for configured ports
+		for j, port := range vm.StreamPorts {
+			if stream, err := CheckStreamOnPort(port); err == nil && stream != nil {
+				if j < len(vm.Streams) {
+					vm.Streams[j].Active = stream.Active
+				}
+			}
+		}
+		
+		vm.LastChecked = time.Now()
+		return
+	}
+	
+	// Production mode: Check ping status using TCP connectivity
 	vm.PingStatus = CheckPingStatus(vm.IPAddress)
 	
 	if vm.PingStatus == "online" {
 		vm.Status = "running"
 		
 		// Use real SSH monitoring if available and configured
-		if !Config.Monitoring.UseMockData && Config.SSH.Enabled && sshClient != nil {
+		if Config.SSH.Enabled && sshClient != nil {
 			err := sshClient.GetRealVMMetrics(vm)
 			if err != nil {
 				// Fallback to mock data on error
