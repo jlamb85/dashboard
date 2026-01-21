@@ -7,11 +7,14 @@ The Server Dashboard is a web application designed to monitor and manage servers
 - Real-time monitoring of servers and VMs
 - User-friendly dashboard with an overview of system health
 - Detailed views for servers and VMs
+- **Monitoring controls** - Start/stop/restart monitoring from UI
+- **Stoplight status indicators** - Color-coded health status (green/yellow/red)
 - **Stream viewer** - View video/media streams from VMs (configurable ports)
 - **Bcrypt password hashing** - Secure authentication with password hash utility
 - **Enhanced logging** - Configurable file logging with automatic rotation
 - **Collapsible sidebar** - Expandable/collapsible navigation with state persistence
 - **Light/Dark theme** - Theme toggle with localStorage persistence
+- **Count badges** - Real-time server and VM counts in sidebar
 - Configurable settings for monitoring intervals and server addresses
 - Authentication middleware to secure access to the dashboard
 - **Embedded assets** - Fully portable single binary with embedded web files
@@ -26,7 +29,8 @@ server-dashboard
 │   ├── handlers
 │   │   ├── dashboard.go        # Dashboard request handlers
 │   │   ├── server.go           # Server monitoring handlers
-│   │   └── vm.go               # VM monitoring handlers
+│   │   ├── vm.go               # VM monitoring handlers
+│   │   └── monitoring.go       # Monitoring control API handlers
 │   ├── models
 │   │   ├── server.go           # Server data model
 │   │   └── vm.go               # VM data model
