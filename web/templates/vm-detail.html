@@ -57,6 +57,12 @@
                                 <span class="badge bg-info ms-auto">{{ getVMCount }}</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/switches" data-page="switches">
+                                <i class="bi bi-hdd-rack"></i> Switches
+                                <span class="badge bg-warning ms-auto">{{ getSwitchCount }}</span>
+                            </a>
+                        </li>
                     </ul>
                     <hr>
                     <div class="small text-muted">
@@ -162,20 +168,122 @@
                                     <div class="info-value">{{ .vm.Processes }}</div>
                                 </div>
                                 <div class="info-item">
-                                    <div class="info-label">Disk Usage</div>
+                                    <div class="info-label">Load Average</div>
+                                    <div class="info-value text-monospace">{{ .vm.LoadAverage }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Kernel Version</div>
+                                    <div class="info-value text-monospace small">{{ .vm.KernelVersion }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Failed Services</div>
                                     <div class="info-value">
-                                        {{ if gt .vm.DiskPercent 80.0 }}
-                                            <span class="badge bg-danger">{{ printf "%.1f" .vm.DiskPercent }}%</span>
-                                        {{ else if gt .vm.DiskPercent 70.0 }}
-                                            <span class="badge bg-warning text-dark">{{ printf "%.1f" .vm.DiskPercent }}%</span>
+                                        {{ if gt .vm.FailedServices 0 }}
+                                            <span class="badge bg-danger">{{ .vm.FailedServices }}</span>
                                         {{ else }}
-                                            <span class="badge bg-success">{{ printf "%.1f" .vm.DiskPercent }}%</span>
+                                            <span class="badge bg-success">0</span>
                                         {{ end }}
                                     </div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Last Checked</div>
                                     <div class="info-value text-muted">{{ .vm.LastChecked.Format "15:04:05" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-info bg-opacity-10">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-memory"></i> Memory & Storage
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-item">
+                                    <div class="info-label">Memory Usage</div>
+                                    <div class="info-value">
+                                        {{ printf "%.0f" .vm.MemoryUsed }} MB / {{ printf "%.0f" .vm.MemoryTotal }} MB
+                                        {{ if gt .vm.MemoryPercent 90.0 }}
+                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .vm.MemoryPercent }}%</span>
+                                        {{ else if gt .vm.MemoryPercent 75.0 }}
+                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .vm.MemoryPercent }}%</span>
+                                        {{ else }}
+                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .vm.MemoryPercent }}%</span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Disk Usage</div>
+                                    <div class="info-value">
+                                        {{ printf "%.0f" .vm.DiskUsage }} GB / {{ printf "%.0f" .vm.DiskTotal }} GB
+                                        {{ if gt .vm.DiskPercent 80.0 }}
+                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .vm.DiskPercent }}%</span>
+                                        {{ else if gt .vm.DiskPercent 70.0 }}
+                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .vm.DiskPercent }}%</span>
+                                        {{ else }}
+                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .vm.DiskPercent }}%</span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Inode Usage</div>
+                                    <div class="info-value">
+                                        {{ .vm.InodeUsed }} / {{ .vm.InodeTotal }}
+                                        {{ if gt .vm.InodePercent 90.0 }}
+                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .vm.InodePercent }}%</span>
+                                        {{ else if gt .vm.InodePercent 75.0 }}
+                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .vm.InodePercent }}%</span>
+                                        {{ else }}
+                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .vm.InodePercent }}%</span>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-warning bg-opacity-10">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-ethernet"></i> Network Statistics
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-item">
+                                    <div class="info-label">Data Received</div>
+                                    <div class="info-value">
+                                        {{ if gt .vm.NetworkRxMB 1024.0 }}
+                                            {{ printf "%.2f GB" (divideFloat .vm.NetworkRxMB 1024.0) }}
+                                        {{ else }}
+                                            {{ printf "%.2f MB" .vm.NetworkRxMB }}
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Data Transmitted</div>
+                                    <div class="info-value">
+                                        {{ if gt .vm.NetworkTxMB 1024.0 }}
+                                            {{ printf "%.2f GB" (divideFloat .vm.NetworkTxMB 1024.0) }}
+                                        {{ else }}
+                                            {{ printf "%.2f MB" .vm.NetworkTxMB }}
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Total Transfer</div>
+                                    <div class="info-value">
+                                        {{ $total := add .vm.NetworkRxMB .vm.NetworkTxMB }}
+                                        {{ if gt $total 1024.0 }}
+                                            {{ printf "%.2f GB" (divideFloat $total 1024.0) }}
+                                        {{ else }}
+                                            {{ printf "%.2f MB" $total }}
+                                        {{ end }}
+                                    </div>
                                 </div>
                             </div>
                         </div>

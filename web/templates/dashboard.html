@@ -46,6 +46,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/quick-summary" data-page="quick-summary">
+                                <i class="bi bi-table"></i> Quick Summary
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/servers" data-page="servers">
                                 <i class="bi bi-server"></i> Servers
                                 <span class="badge bg-primary ms-auto">{{ getServerCount }}</span>
@@ -55,6 +60,12 @@
                             <a class="nav-link" href="/vms" data-page="vms">
                                 <i class="bi bi-cpu"></i> Virtual Machines
                                 <span class="badge bg-info ms-auto">{{ getVMCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/switches" data-page="switches">
+                                <i class="bi bi-hdd-rack"></i> Switches
+                                <span class="badge bg-warning ms-auto">{{ getSwitchCount }}</span>
                             </a>
                         </li>
                     </ul>
@@ -87,8 +98,8 @@
                 </div>
 
                 <!-- Summary Cards -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3">
+                <div class="row g-3 mb-4 overview-grid" data-card-grid="overview" data-per-page="8" data-compact-threshold="6">
+                    <div class="col-md-3" data-card-item>
                         <div class="card status-card h-100">
                             <div class="card-body">
                                 <div class="card-title d-flex justify-content-between align-items-center">
@@ -124,7 +135,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3" data-card-item>
                         <div class="card status-card h-100">
                             <div class="card-body">
                                 <div class="card-title d-flex justify-content-between align-items-center">
@@ -160,17 +171,53 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3" data-card-item>
+                        <div class="card status-card h-100">
+                            <div class="card-body">
+                                <div class="card-title d-flex justify-content-between align-items-center">
+                                    <span>Switches</span>
+                                    <i class="bi bi-hdd-rack text-warning"></i>
+                                </div>
+                                <div class="metric-value">{{ len .switches }}</div>
+                                <div class="mt-2">
+                                    {{ $onlineSwitches := 0 }}
+                                    {{ range .switches }}
+                                        {{ if eq .PingStatus "online" }}{{ $onlineSwitches = add $onlineSwitches 1 }}{{ end }}
+                                    {{ end }}
+                                    {{ $switchTotal := len .switches }}
+                                    {{ $switchStatusClass := "bg-secondary" }}
+                                    {{ if gt $switchTotal 0 }}
+                                        {{ if eq $onlineSwitches 0 }}
+                                            {{ $switchStatusClass = "bg-danger" }}
+                                        {{ else if eq $onlineSwitches $switchTotal }}
+                                            {{ $switchStatusClass = "bg-success" }}
+                                        {{ else }}
+                                            {{ $switchStatusClass = "bg-warning" }}
+                                        {{ end }}
+                                    {{ end }}
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <span class="badge {{ $switchStatusClass }}" title="{{ $onlineSwitches }} of {{ $switchTotal }} online">
+                                            <i class="bi bi-circle-fill"></i> {{ $onlineSwitches }}/{{ $switchTotal }} Online
+                                        </span>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="bi bi-diagram-3"></i> Network switches
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3" data-card-item>
                         <div class="card status-card h-100">
                             <div class="card-body">
                                 <div class="card-title d-flex justify-content-between align-items-center">
                                     <span>Overall Status</span>
                                     <i class="bi bi-activity text-secondary"></i>
                                 </div>
-                                <div class="metric-value">{{ add (len .servers) (len .vms) }}</div>
+                                <div class="metric-value">{{ add (add (len .servers) (len .vms)) (len .switches) }}</div>
                                 <div class="mt-2">
-                                    {{ $totalOnline := add $onlineServers $onlineVMs }}
-                                    {{ $totalSystems := add (len .servers) (len .vms) }}
+                                    {{ $totalOnline := add (add $onlineServers $onlineVMs) $onlineSwitches }}
+                                    {{ $totalSystems := add (add (len .servers) (len .vms)) (len .switches) }}
                                     {{ $overallStatusClass := "bg-secondary" }}
                                     {{ $statusText := "No Systems" }}
                                     {{ if gt $totalSystems 0 }}
@@ -200,7 +247,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3" data-card-item>
                         <div class="card status-card h-100">
                             <div class="card-body">
                                 <div class="card-title">Monitoring Status</div>
@@ -215,55 +262,121 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Monitoring Status Section -->
-                <div class="detail-section">
-                    <h3 class="h5 fw-bold">
-                        <i class="bi bi-diagram-3"></i> Monitoring Features
-                    </h3>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="info-item">
-                                <div class="info-label">
-                                    <i class="bi bi-router"></i> Connectivity Checks
+                    {{ if uiShowSynthetics }}
+                    <div class="col-md-3" data-card-item>
+                        <div class="card status-card h-100">
+                            <div class="card-body">
+                                <div class="card-title d-flex justify-content-between align-items-center">
+                                    <span>Synthetics</span>
+                                    <i class="bi bi-check-circle text-success"></i>
                                 </div>
-                                <div class="info-value">TCP Port Monitoring</div>
-                                <small class="text-muted">SSH, HTTP, HTTPS, MySQL, PostgreSQL</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-item">
-                                <div class="info-label">
-                                    <i class="bi bi-clock-history"></i> System Metrics
+                                <div class="metric-value">
+                                    {{ .syntheticsOK }}/{{ .syntheticsTotal }}
                                 </div>
-                                <div class="info-value">Real-time Data</div>
-                                <small class="text-muted">Uptime, Processes, Disk Space</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-item">
-                                <div class="info-label">
-                                    <i class="bi bi-eye"></i> Status Indicators
+                                <div class="mt-2">
+                                    {{ if gt .syntheticsTotal 0 }}
+                                        <span class="badge bg-success">Pass</span>
+                                        {{ if gt .syntheticsWorstLatency 0 }}
+                                            <span class="badge bg-info text-dark ms-2">Worst {{ .syntheticsWorstLatency }} ms</span>
+                                        {{ end }}
+                                    {{ else }}
+                                        <span class="badge bg-secondary">No checks</span>
+                                    {{ end }}
                                 </div>
-                                <div class="info-value">Live Updates</div>
-                                <small class="text-muted">Online/Offline with auto-refresh</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-item">
-                                <div class="info-label">
-                                    <i class="bi bi-zoom-in"></i> Detailed Views
-                                </div>
-                                <div class="info-value">Click to Expand</div>
-                                <small class="text-muted">Click any server/VM for details</small>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="bi bi-link-45deg"></i> <a href="/synthetics">View synthetic checks</a>
+                                </small>
                             </div>
                         </div>
                     </div>
+                    {{ end }}
                 </div>
+                <div class="card-grid-pager" data-card-grid-pager="overview"></div>
+
+                <!-- Link to Quick Summary Page -->
+                {{ if uiShowQuickSummary }}
+                <div class="detail-section">
+                    <a href="/quick-summary" class="btn btn-primary btn-lg">
+                        <i class="bi bi-table"></i> View Quick Summary
+                    </a>
+                </div>
+                {{ end }}
+
+                <!-- Monitoring Status Section -->
+                {{ if uiShowMonitoringFeatures }}
+                <div class="detail-section">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h3 class="h5 fw-bold mb-0">
+                            <i class="bi bi-diagram-3"></i> Monitoring Features
+                        </h3>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#monitoring-features" aria-expanded="true" aria-controls="monitoring-features">
+                            <i class="bi bi-chevron-down"></i> Show/Hide
+                        </button>
+                    </div>
+
+                    <div class="collapse show" id="monitoring-features">
+                        <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-router"></i> Connectivity & Health
+                                </div>
+                                <div class="info-value">Ping + TCP checks</div>
+                                <small class="text-muted">SSH, HTTP(S), DB ports with online/offline badges</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-speedometer2"></i> CPU & Load
+                                </div>
+                                <div class="info-value">1/5/15 min load</div>
+                                <small class="text-muted">Process counts with high-load indicators</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-hdd"></i> Memory, Disk, Inodes
+                                </div>
+                                <div class="info-value">Percent used with alerts</div>
+                                <small class="text-muted">Threshold icons for memory >80% and disk >85%</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-gear-wide-connected"></i> Services & Streams
+                                </div>
+                                <div class="info-value">Failed services + VM streams</div>
+                                <small class="text-muted">Per-host failed svc counts and active stream totals</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-diagram-3"></i> Network & Throughput
+                                </div>
+                                <div class="info-value">RX/TX MB per host</div>
+                                <small class="text-muted">Traffic snapshots on summary tables</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-hdd-rack"></i> Switch Telemetry
+                                </div>
+                                <div class="info-value">OpenFlow, flows, ports</div>
+                                <small class="text-muted">Edgecore-ready with per-device SSH credentials</small>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+                {{ end }}
 
                 <!-- Quick Links -->
+                {{ if uiShowNavigationButtons }}
                 <div class="detail-section">
                     <h3 class="h5 fw-bold">
                         <i class="bi bi-link-45deg"></i> Quick Navigation
@@ -275,8 +388,17 @@
                         <a href="/vms" class="btn btn-primary btn-sm">
                             <i class="bi bi-cpu"></i> View All VMs
                         </a>
+                        <a href="/switches" class="btn btn-primary btn-sm">
+                            <i class="bi bi-hdd-rack"></i> View All Switches
+                        </a>
+                        {{ if uiShowSynthetics }}
+                        <a href="/synthetics" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-check-circle"></i> Synthetic Checks
+                        </a>
+                        {{ end }}
                     </div>
                 </div>
+                {{ end }}
             </main>
         </div>
     </div>
@@ -297,7 +419,14 @@
         </div>
     </footer>
 
+    <script>
+        window.dashboardUI = {
+            enableAutoRefresh: {{ if uiEnableAutoRefresh }}true{{ else }}false{{ end }},
+            autoRefreshSeconds: {{ uiAutoRefreshSeconds }}
+        };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/enhancements.js"></script>
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

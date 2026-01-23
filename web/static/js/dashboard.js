@@ -403,6 +403,42 @@ const MonitoringControl = {
 };
 
 // ============================================
+// Monitoring Features Collapse Persistence
+// ============================================
+
+const MonitoringFeaturesToggle = {
+    STORAGE_KEY: 'monitoring-features-collapse',
+
+    init() {
+        const collapseEl = document.getElementById('monitoring-features');
+        const toggleBtn = document.querySelector('[data-bs-target="#monitoring-features"]');
+        if (!collapseEl || !toggleBtn || !window.bootstrap) return;
+
+        // Apply saved state
+        const saved = (() => {
+            try { return localStorage.getItem(this.STORAGE_KEY); } catch (_) { return null; }
+        })();
+        const collapse = new bootstrap.Collapse(collapseEl, { toggle: false });
+        if (saved === 'collapsed') {
+            collapse.hide();
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        } else {
+            collapse.show();
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        collapseEl.addEventListener('hidden.bs.collapse', () => {
+            try { localStorage.setItem(this.STORAGE_KEY, 'collapsed'); } catch (_) {}
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        });
+        collapseEl.addEventListener('shown.bs.collapse', () => {
+            try { localStorage.setItem(this.STORAGE_KEY, 'expanded'); } catch (_) {}
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        });
+    }
+};
+
+// ============================================
 // Initialization
 // ============================================
 
@@ -413,6 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     StatusMonitor.init();
     TableInteraction.init();
     MonitoringControl.init();
+    MonitoringFeaturesToggle.init();
     
     // Global error handler
     window.addEventListener('error', (e) => {

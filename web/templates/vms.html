@@ -46,6 +46,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/quick-summary" data-page="quick-summary">
+                                <i class="bi bi-table"></i> Quick Summary
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/servers" data-page="servers">
                                 <i class="bi bi-server"></i> Servers
                                 <span class="badge bg-primary ms-auto">{{ getServerCount }}</span>
@@ -55,6 +60,12 @@
                             <a class="nav-link active" href="/vms" data-page="vms">
                                 <i class="bi bi-cpu"></i> Virtual Machines
                                 <span class="badge bg-info ms-auto">{{ getVMCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/switches" data-page="switches">
+                                <i class="bi bi-hdd-rack"></i> Switches
+                                <span class="badge bg-warning ms-auto">{{ getSwitchCount }}</span>
                             </a>
                         </li>
                     </ul>
@@ -88,7 +99,7 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover table-modern">
+                    <table class="table table-hover table-modern table-enhance" data-per-page="25" data-tag-filter="true">
                         <thead>
                             <tr>
                                 <th scope="col"><i class="bi bi-hdd"></i> Name</th>
@@ -96,14 +107,16 @@
                                 <th scope="col"><i class="bi bi-diagram-3"></i> Status</th>
                                 <th scope="col"><i class="bi bi-hdd-network"></i> Host Server</th>
                                 <th scope="col"><i class="bi bi-speedometer2"></i> Uptime</th>
-                                <th scope="col"><i class="bi bi-gear"></i> Processes</th>
+                                <th scope="col"><i class="bi bi-memory"></i> Memory</th>
                                 <th scope="col"><i class="bi bi-hdd-rack"></i> Disk</th>
+                                <th scope="col"><i class="bi bi-activity"></i> Load</th>
                                 <th scope="col"><i class="bi bi-clock"></i> Last Checked</th>
+                                <th scope="col"><i class="bi bi-tag"></i> Tags</th>
                             </tr>
                         </thead>
                         <tbody>
                             {{ range .vms }}
-                            <tr class="clickable-row" data-href="/vms/{{ .ID }}" role="button" tabindex="0" onkeypress="if(event.key==='Enter')location.href='/vms/{{ .ID }}'">
+                            <tr class="clickable-row" data-href="/vms/{{ .ID }}" data-tags="{{ join .Tags "," }}" role="button" tabindex="0" onkeypress="if(event.key==='Enter')location.href='/vms/{{ .ID }}'">
                                 <td class="fw-bold">{{ .Name }}</td>
                                 <td class="text-monospace">{{ .IPAddress }}</td>
                                 <td>
@@ -125,7 +138,15 @@
                                     {{ end }}
                                 </td>
                                 <td>{{ .Uptime }}</td>
-                                <td>{{ .Processes }}</td>
+                                <td>
+                                    {{ if gt .MemoryPercent 90.0 }}
+                                        <span class="badge bg-danger">{{ printf "%.0f" .MemoryPercent }}%</span>
+                                    {{ else if gt .MemoryPercent 75.0 }}
+                                        <span class="badge bg-warning text-dark">{{ printf "%.0f" .MemoryPercent }}%</span>
+                                    {{ else }}
+                                        <span class="badge bg-success">{{ printf "%.0f" .MemoryPercent }}%</span>
+                                    {{ end }}
+                                </td>
                                 <td>
                                     {{ if gt .DiskPercent 80.0 }}
                                         <span class="badge bg-danger">{{ printf "%.1f" .DiskPercent }}%</span>
@@ -135,7 +156,15 @@
                                         <span class="badge bg-success">{{ printf "%.1f" .DiskPercent }}%</span>
                                     {{ end }}
                                 </td>
+                                <td><small class="text-monospace">{{ .LoadAverage }}</small></td>
                                 <td><small class="text-muted">{{ .LastChecked.Format "15:04:05" }}</small></td>
+                                <td>
+                                    {{ if gt (len .Tags) 0 }}
+                                        {{ range .Tags }}<span class="badge bg-light text-dark border me-1">{{ . }}</span>{{ end }}
+                                    {{ else }}
+                                        <span class="text-muted small">none</span>
+                                    {{ end }}
+                                </td>
                             </tr>
                             {{ end }}
                         </tbody>
@@ -168,7 +197,14 @@
         </div>
     </footer>
 
+    <script>
+        window.dashboardUI = {
+            enableAutoRefresh: {{ if uiEnableAutoRefresh }}true{{ else }}false{{ end }},
+            autoRefreshSeconds: {{ uiAutoRefreshSeconds }}
+        };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/enhancements.js"></script>
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

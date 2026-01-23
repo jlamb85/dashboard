@@ -41,11 +41,34 @@ func DashboardHandlerWithTemplates(w http.ResponseWriter, r *http.Request, templ
         return
     }
     
+    switches, err := services.GetAllSwitches()
+    if err != nil {
+        http.Error(w, "Error fetching switches: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    synthetics := services.GetSyntheticResults()
+    okCount := 0
+    worstLatency := int64(0)
+    for _, s := range synthetics {
+        if s.Status == "ok" {
+            okCount++
+        }
+        if s.LatencyMs > worstLatency {
+            worstLatency = s.LatencyMs
+        }
+    }
+    
     w.Header().Set("Content-Type", "text/html")
     
     data := map[string]interface{}{
         "servers": servers,
         "vms": vms,
+        "switches": switches,
+        "synthetics": synthetics,
+        "syntheticsOK": okCount,
+        "syntheticsTotal": len(synthetics),
+        "syntheticsWorstLatency": worstLatency,
     }
     
     // Template is defined with name "dashboard" in dashboard.html

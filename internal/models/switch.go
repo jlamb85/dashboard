@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// Server represents a server in the network.
-type Server struct {
+// Switch represents a network switch running Debian Linux with OpenFlow
+type Switch struct {
 	ID             string    `json:"id"`
 	Name           string    `json:"name"`
 	IPAddress      string    `json:"ip_address"`
@@ -38,30 +38,41 @@ type Server struct {
 	NetworkTxMB    float64   `json:"network_tx_mb"`   // Network transmitted in MB
 	// System info
 	KernelVersion  string    `json:"kernel_version"`  // Linux kernel version
-	LastChecked    time.Time `json:"last_checked"`
+	// OpenFlow specific
+	OpenFlowVersion string   `json:"openflow_version"` // OpenFlow version (e.g., "1.3", "1.4")
+	OpenFlowStatus  string   `json:"openflow_status"`  // Status: "active", "inactive", "error"
+	ControllerIP    string   `json:"controller_ip"`    // SDN controller IP address
+	FlowCount       int      `json:"flow_count"`       // Number of active flow rules
+	PortCount       int      `json:"port_count"`       // Number of switch ports
+	LastChecked     time.Time `json:"last_checked"`
 }
 
-// NewServer creates a new Server instance.
-func NewServer(id, name, ipAddress, hostname string, port int) *Server {
-	return &Server{
-		ID:          id,
-		Name:        name,
-		IPAddress:   ipAddress,
-		Hostname:    hostname,
-		Port:        port,
-		Status:      "unknown",
-		PingStatus:  "unknown",
-		Uptime:      "N/A",
-		Processes:   0,
-		DiskUsage:   0,
-		DiskTotal:   0,
-		DiskPercent: 0,
-		LastChecked: time.Now(),
+// NewSwitch creates a new Switch instance
+func NewSwitch(id, name, ipAddress, hostname string, port int) *Switch {
+	return &Switch{
+		ID:              id,
+		Name:            name,
+		IPAddress:       ipAddress,
+		Hostname:        hostname,
+		Port:            port,
+		Status:          "unknown",
+		PingStatus:      "unknown",
+		Uptime:          "N/A",
+		Processes:       0,
+		DiskUsage:       0,
+		DiskTotal:       0,
+		DiskPercent:     0,
+		OpenFlowStatus:  "unknown",
+		OpenFlowVersion: "N/A",
+		ControllerIP:    "N/A",
+		FlowCount:       0,
+		PortCount:       0,
+		LastChecked:     time.Now(),
 	}
 }
 
-// CheckStatus updates the server's status.
-func (s *Server) CheckStatus(status string) {
-	s.Status = status
-	s.LastChecked = time.Now()
+// CheckStatus updates the switch's status
+func (sw *Switch) CheckStatus(status string) {
+	sw.Status = status
+	sw.LastChecked = time.Now()
 }

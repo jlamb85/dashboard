@@ -192,6 +192,23 @@ body {
     letter-spacing: 0.5px;
 }
 
+.overview-grid.overview-compact .status-card .card-body {
+    padding: 1rem;
+}
+
+.overview-grid.overview-compact .card-title {
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.overview-grid.overview-compact .metric-value {
+    font-size: 1.5rem;
+}
+
+.card-grid-controls .btn {
+    min-width: 72px;
+}
+
 [data-bs-theme="dark"] .card-title {
     color: #a0a0a0;
 }
@@ -374,10 +391,20 @@ body {
     padding: 1rem;
     background-color: #f8f9fa;
     border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    transition: var(--transition);
+}
+
+.info-item:hover {
+    background-color: #e9ecef;
 }
 
 [data-bs-theme="dark"] .info-item {
     background-color: #2d2d44;
+}
+
+[data-bs-theme="dark"] .info-item:hover {
+    background-color: #3a3a55;
 }
 
 .info-label {
@@ -397,10 +424,25 @@ body {
     font-size: 1.1rem;
     font-weight: 600;
     color: #212529;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 [data-bs-theme="dark"] .info-value {
     color: #e0e0e0;
+}
+
+.text-monospace {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+}
+
+/* Metric badges with improved spacing */
+.badge.ms-2 {
+    font-size: 0.85rem;
+    padding: 0.35em 0.65em;
 }
 
 /* ============================================

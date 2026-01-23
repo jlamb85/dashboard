@@ -16,9 +16,12 @@ type Config struct {
 	Auth               AuthConfig          `yaml:"auth"`
 	Servers            []ServerConfig      `yaml:"servers"`
 	VirtualMachines    []VirtualMachineConfig `yaml:"virtual_machines"`
+	Switches           []SwitchConfig      `yaml:"switches"`
 	Monitoring         MonitoringConfig    `yaml:"monitoring"`
+	SyntheticChecks    []SyntheticCheckConfig `yaml:"synthetic_checks"`
 	SSH                SSHConfig           `yaml:"ssh"`
 	TLS                TLSConfig           `yaml:"tls"`
+	UI                 UIConfig            `yaml:"ui"`
 	Environment        string              `yaml:"environment"`
 }
 
@@ -50,6 +53,7 @@ type ServerConfig struct {
 	Hostname  string `yaml:"hostname"`
 	Port      int    `yaml:"port"`
 	Enabled   bool   `yaml:"enabled"`
+	Tags      []string `yaml:"tags"`
 }
 
 type VirtualMachineConfig struct {
@@ -61,6 +65,37 @@ type VirtualMachineConfig struct {
 	Enabled      bool   `yaml:"enabled"`
 	HostServerID string `yaml:"host_server_id"`
 	StreamPorts  []int  `yaml:"stream_ports"` // Optional ports for video/media streaming
+	Tags         []string `yaml:"tags"`
+}
+
+type SwitchConfig struct {
+	ID              string `yaml:"id"`
+	Name            string `yaml:"name"`
+	IPAddress       string `yaml:"ip_address"`
+	Hostname        string `yaml:"hostname"`
+	Port            int    `yaml:"port"`
+	Enabled         bool   `yaml:"enabled"`
+	ControllerIP    string `yaml:"controller_ip"`    // SDN controller IP
+	OpenFlowVersion string `yaml:"openflow_version"` // Expected OpenFlow version
+	// SSH credentials specific to this switch (optional, falls back to global SSH config)
+	SSHUsername     string `yaml:"ssh_username"`      // Switch-specific SSH username
+	SSHPassword     string `yaml:"ssh_password"`      // Switch-specific SSH password
+	SSHKeyPath      string `yaml:"ssh_key_path"`      // Switch-specific SSH private key path
+	Tags            []string `yaml:"tags"`
+}
+
+type SyntheticCheckConfig struct {
+	ID              string   `yaml:"id"`
+	Name            string   `yaml:"name"`
+	Type            string   `yaml:"type"`             // http, tcp, dns
+	URL             string   `yaml:"url"`              // for http
+	Host            string   `yaml:"host"`             // for tcp/dns
+	Port            int      `yaml:"port"`             // for tcp
+	ExpectedStatus  int      `yaml:"expected_status"`  // for http
+	IntervalSeconds int      `yaml:"interval_seconds"`
+	TimeoutSeconds  int      `yaml:"timeout_seconds"`
+	Enabled         bool     `yaml:"enabled"`
+	Tags            []string `yaml:"tags"`
 }
 
 type MonitoringConfig struct {
@@ -70,6 +105,15 @@ type MonitoringConfig struct {
 	CheckDiskSpace      bool `yaml:"check_disk_space"`
 	CheckUptime         bool `yaml:"check_uptime"`
 	UseMockData         bool `yaml:"use_mock_data"`
+}
+
+type UIConfig struct {
+	ShowQuickSummary       bool `yaml:"show_quick_summary"`
+	ShowMonitoringFeatures bool `yaml:"show_monitoring_features"`
+	ShowNavigationButtons  bool `yaml:"show_navigation_buttons"`
+	ShowSynthetics         bool `yaml:"show_synthetics"`
+	EnableAutoRefresh      bool `yaml:"enable_auto_refresh"`
+	AutoRefreshSeconds     int  `yaml:"auto_refresh_seconds"`
 }
 
 type SSHConfig struct {

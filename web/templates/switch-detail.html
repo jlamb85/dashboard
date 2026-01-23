@@ -1,10 +1,10 @@
-{{ define "server-detail" }}
+{{ define "switch-detail.html" }}
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Details - Server Dashboard</title>
+    <title>Switch Details - Server Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/static/css/style.css">
@@ -46,7 +46,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link active" href="/servers" data-page="servers">
+                            <a class="nav-link" href="/servers" data-page="servers">
                                 <i class="bi bi-server"></i> Servers
                                 <span class="badge bg-primary ms-auto">{{ getServerCount }}</span>
                             </a>
@@ -58,7 +58,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/switches" data-page="switches">
+                            <a class="nav-link active" href="/switches" data-page="switches">
                                 <i class="bi bi-hdd-rack"></i> Switches
                                 <span class="badge bg-warning ms-auto">{{ getSwitchCount }}</span>
                             </a>
@@ -89,14 +89,14 @@
                 <div class="mb-4 d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="h3 fw-bold">
-                            <i class="bi bi-server"></i> {{ .server.Name }}
+                            <i class="bi bi-hdd-rack"></i> {{ .switch.Name }}
                         </h2>
                         <p class="text-muted mb-0">
-                            <i class="bi bi-globe"></i> {{ .server.IPAddress }}
+                            <i class="bi bi-globe"></i> {{ .switch.IPAddress }}
                         </p>
                     </div>
-                    <a href="/servers" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-left"></i> Back to Servers
+                    <a href="/switches" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Switches
                     </a>
                 </div>
 
@@ -105,26 +105,26 @@
                         <div class="card">
                             <div class="card-header bg-primary bg-opacity-10">
                                 <h5 class="mb-0">
-                                    <i class="bi bi-info-circle"></i> Server Information
+                                    <i class="bi bi-info-circle"></i> Switch Information
                                 </h5>
                             </div>
                             <div class="card-body">
                                 <div class="info-item">
-                                    <div class="info-label">Server ID</div>
-                                    <div class="info-value text-monospace">{{ .server.ID }}</div>
+                                    <div class="info-label">Switch ID</div>
+                                    <div class="info-value text-monospace">{{ .switch.ID }}</div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Hostname</div>
-                                    <div class="info-value">{{ .server.Hostname }}</div>
+                                    <div class="info-value">{{ .switch.Hostname }}</div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Port</div>
-                                    <div class="info-value">{{ .server.Port }}</div>
+                                    <div class="info-value">{{ .switch.Port }}</div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Status</div>
                                     <div class="info-value">
-                                        {{ if eq .server.Status "online" }}
+                                        {{ if eq .switch.Status "online" }}
                                             <span class="badge bg-success">
                                                 <i class="bi bi-circle-fill"></i> Online
                                             </span>
@@ -149,25 +149,25 @@
                             <div class="card-body">
                                 <div class="info-item">
                                     <div class="info-label">Uptime</div>
-                                    <div class="info-value">{{ .server.Uptime }}</div>
+                                    <div class="info-value">{{ .switch.Uptime }}</div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Running Processes</div>
-                                    <div class="info-value">{{ .server.Processes }}</div>
+                                    <div class="info-value">{{ .switch.Processes }}</div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Load Average</div>
-                                    <div class="info-value text-monospace">{{ .server.LoadAverage }}</div>
+                                    <div class="info-value text-monospace">{{ .switch.LoadAverage }}</div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Kernel Version</div>
-                                    <div class="info-value text-monospace small">{{ .server.KernelVersion }}</div>
+                                    <div class="info-value text-monospace small">{{ .switch.KernelVersion }}</div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Failed Services</div>
                                     <div class="info-value">
-                                        {{ if gt .server.FailedServices 0 }}
-                                            <span class="badge bg-danger">{{ .server.FailedServices }}</span>
+                                        {{ if gt .switch.FailedServices 0 }}
+                                            <span class="badge bg-danger">{{ .switch.FailedServices }}</span>
                                         {{ else }}
                                             <span class="badge bg-success">0</span>
                                         {{ end }}
@@ -175,7 +175,7 @@
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Last Checked</div>
-                                    <div class="info-value text-muted">{{ .server.LastChecked.Format "15:04:05" }}</div>
+                                    <div class="info-value text-muted">{{ .switch.LastChecked.Format "15:04:05" }}</div>
                                 </div>
                             </div>
                         </div>
@@ -194,39 +194,39 @@
                                 <div class="info-item">
                                     <div class="info-label">Memory Usage</div>
                                     <div class="info-value">
-                                        {{ printf "%.0f" .server.MemoryUsed }} MB / {{ printf "%.0f" .server.MemoryTotal }} MB
-                                        {{ if gt .server.MemoryPercent 90.0 }}
-                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .server.MemoryPercent }}%</span>
-                                        {{ else if gt .server.MemoryPercent 75.0 }}
-                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .server.MemoryPercent }}%</span>
+                                        {{ printf "%.0f" .switch.MemoryUsed }} MB / {{ printf "%.0f" .switch.MemoryTotal }} MB
+                                        {{ if gt .switch.MemoryPercent 90.0 }}
+                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .switch.MemoryPercent }}%</span>
+                                        {{ else if gt .switch.MemoryPercent 75.0 }}
+                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .switch.MemoryPercent }}%</span>
                                         {{ else }}
-                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .server.MemoryPercent }}%</span>
+                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .switch.MemoryPercent }}%</span>
                                         {{ end }}
                                     </div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Disk Usage</div>
                                     <div class="info-value">
-                                        {{ printf "%.0f" .server.DiskUsage }} GB / {{ printf "%.0f" .server.DiskTotal }} GB
-                                        {{ if gt .server.DiskPercent 80.0 }}
-                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .server.DiskPercent }}%</span>
-                                        {{ else if gt .server.DiskPercent 70.0 }}
-                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .server.DiskPercent }}%</span>
+                                        {{ printf "%.0f" .switch.DiskUsage }} GB / {{ printf "%.0f" .switch.DiskTotal }} GB
+                                        {{ if gt .switch.DiskPercent 80.0 }}
+                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .switch.DiskPercent }}%</span>
+                                        {{ else if gt .switch.DiskPercent 70.0 }}
+                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .switch.DiskPercent }}%</span>
                                         {{ else }}
-                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .server.DiskPercent }}%</span>
+                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .switch.DiskPercent }}%</span>
                                         {{ end }}
                                     </div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Inode Usage</div>
                                     <div class="info-value">
-                                        {{ .server.InodeUsed }} / {{ .server.InodeTotal }}
-                                        {{ if gt .server.InodePercent 90.0 }}
-                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .server.InodePercent }}%</span>
-                                        {{ else if gt .server.InodePercent 75.0 }}
-                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .server.InodePercent }}%</span>
+                                        {{ .switch.InodeUsed }} / {{ .switch.InodeTotal }}
+                                        {{ if gt .switch.InodePercent 90.0 }}
+                                            <span class="badge bg-danger ms-2">{{ printf "%.1f" .switch.InodePercent }}%</span>
+                                        {{ else if gt .switch.InodePercent 75.0 }}
+                                            <span class="badge bg-warning text-dark ms-2">{{ printf "%.1f" .switch.InodePercent }}%</span>
                                         {{ else }}
-                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .server.InodePercent }}%</span>
+                                            <span class="badge bg-success ms-2">{{ printf "%.1f" .switch.InodePercent }}%</span>
                                         {{ end }}
                                     </div>
                                 </div>
@@ -245,27 +245,27 @@
                                 <div class="info-item">
                                     <div class="info-label">Data Received</div>
                                     <div class="info-value">
-                                        {{ if gt .server.NetworkRxMB 1024.0 }}
-                                            {{ printf "%.2f GB" (divideFloat .server.NetworkRxMB 1024.0) }}
+                                        {{ if gt .switch.NetworkRxMB 1024.0 }}
+                                            {{ printf "%.2f GB" (divideFloat .switch.NetworkRxMB 1024.0) }}
                                         {{ else }}
-                                            {{ printf "%.2f MB" .server.NetworkRxMB }}
+                                            {{ printf "%.2f MB" .switch.NetworkRxMB }}
                                         {{ end }}
                                     </div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Data Transmitted</div>
                                     <div class="info-value">
-                                        {{ if gt .server.NetworkTxMB 1024.0 }}
-                                            {{ printf "%.2f GB" (divideFloat .server.NetworkTxMB 1024.0) }}
+                                        {{ if gt .switch.NetworkTxMB 1024.0 }}
+                                            {{ printf "%.2f GB" (divideFloat .switch.NetworkTxMB 1024.0) }}
                                         {{ else }}
-                                            {{ printf "%.2f MB" .server.NetworkTxMB }}
+                                            {{ printf "%.2f MB" .switch.NetworkTxMB }}
                                         {{ end }}
                                     </div>
                                 </div>
                                 <div class="info-item">
                                     <div class="info-label">Total Transfer</div>
                                     <div class="info-value">
-                                        {{ $total := add .server.NetworkRxMB .server.NetworkTxMB }}
+                                        {{ $total := add .switch.NetworkRxMB .switch.NetworkTxMB }}
                                         {{ if gt $total 1024.0 }}
                                             {{ printf "%.2f GB" (divideFloat $total 1024.0) }}
                                         {{ else }}
@@ -278,106 +278,83 @@
                     </div>
                 </div>
 
-                <div class="detail-section">
-                    <h3 class="h5 fw-bold mb-3">
-                        <i class="bi bi-hdd-rack"></i> Disk Space Details
-                    </h3>
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <div class="info-item">
-                                <div class="info-label">Total Disk Space</div>
-                                <div class="info-value">{{ .server.DiskTotal }}GB</div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-success bg-opacity-10">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-diagram-2"></i> OpenFlow Configuration
+                                </h5>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="info-item">
-                                <div class="info-label">Used Disk Space</div>
-                                <div class="info-value">{{ .server.DiskUsage }}GB</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="info-item">
-                                <div class="info-label">Disk Usage %</div>
-                                <div class="info-value">{{ printf "%.2f" .server.DiskPercent }}%</div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <div class="info-label">OpenFlow Status</div>
+                                            <div class="info-value">
+                                                {{ if eq .switch.OpenFlowStatus "active" }}
+                                                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Active</span>
+                                                {{ else if eq .switch.OpenFlowStatus "inactive" }}
+                                                    <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle"></i> Inactive</span>
+                                                {{ else }}
+                                                    <span class="badge bg-secondary">{{ .switch.OpenFlowStatus }}</span>
+                                                {{ end }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <div class="info-label">OpenFlow Version</div>
+                                            <div class="info-value text-monospace">{{ .switch.OpenFlowVersion }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <div class="info-label">Controller IP</div>
+                                            <div class="info-value text-monospace">{{ .switch.ControllerIP }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <div class="info-label">Flow Rules</div>
+                                            <div class="info-value">{{ .switch.FlowCount }} flows</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <div class="info-label">Switch Ports</div>
+                                            <div class="info-value">{{ .switch.PortCount }} ports</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="detail-section">
-                    <h3 class="h5 fw-bold mb-3">
-                        <i class="bi bi-laptop"></i> Virtual Machines on this Server
-                    </h3>
-                    {{ if eq (len .vms) 0 }}
-                        <div class="alert alert-info d-flex align-items-center" role="alert">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <span>No VMs are assigned to this server.</span>
-                        </div>
-                    {{ else }}
-                        <div class="table-responsive">
-                            <table class="table table-hover table-modern mb-0">
-                                <thead>
-                                    <tr>
-                                        <th scope="col"><i class="bi bi-hdd"></i> Name</th>
-                                        <th scope="col"><i class="bi bi-globe"></i> IP Address</th>
-                                        <th scope="col"><i class="bi bi-diagram-3"></i> Status</th>
-                                        <th scope="col"><i class="bi bi-speedometer2"></i> Uptime</th>
-                                        <th scope="col"><i class="bi bi-gear"></i> Processes</th>
-                                        <th scope="col"><i class="bi bi-hdd-rack"></i> Disk</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {{ range .vms }}
-                                    <tr class="clickable-row" data-href="/vms/{{ .ID }}" role="button" tabindex="0" onkeypress="if(event.key==='Enter')location.href='/vms/{{ .ID }}'">
-                                        <td class="fw-bold">{{ .Name }}</td>
-                                        <td class="text-monospace">{{ .IPAddress }}</td>
-                                        <td>
-                                            {{ if eq .Status "running" }}
-                                                <span class="badge bg-success status-badge"><i class="bi bi-circle-fill"></i> Running</span>
-                                            {{ else }}
-                                                <span class="badge bg-danger status-badge"><i class="bi bi-circle-fill"></i> Offline</span>
-                                            {{ end }}
-                                        </td>
-                                        <td>{{ .Uptime }}</td>
-                                        <td>{{ .Processes }}</td>
-                                        <td>
-                                            {{ if gt .DiskPercent 80.0 }}
-                                                <span class="badge bg-danger">{{ printf "%.1f" .DiskPercent }}%</span>
-                                            {{ else if gt .DiskPercent 70.0 }}
-                                                <span class="badge bg-warning text-dark">{{ printf "%.1f" .DiskPercent }}%</span>
-                                            {{ else }}
-                                                <span class="badge bg-success">{{ printf "%.1f" .DiskPercent }}%</span>
-                                            {{ end }}
-                                        </td>
-                                    </tr>
-                                    {{ end }}
-                                </tbody>
-                            </table>
-                        </div>
-                    {{ end }}
                 </div>
             </main>
-            </div>
         </div>
+    </div>
 
-        <!-- Footer - Sticky at bottom -->
-        <footer class="footer mt-auto py-3 bg-body-secondary border-top">
-            <div class="container-fluid">
-                <div class="row align-items-center">
-                    <div class="col-md-6 text-muted">
-                        <small>&copy; {{ currentYear }} Server Dashboard</small>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <small class="text-muted">
-                            <i class="bi bi-code-square"></i> {{ appVersion }}
-                        </small>
-                    </div>
+    <!-- Footer - Sticky at bottom -->
+    <footer class="footer mt-auto py-3 bg-body-secondary border-top">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-muted">
+                    <small>&copy; {{ currentYear }} Server Dashboard</small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        <i class="bi bi-code-square"></i> {{ appVersion }}
+                    </small>
                 </div>
             </div>
-        </footer>
+        </div>
+    </footer>
 
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="/static/js/dashboard.js"></script>
-    </body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
 </html>
 {{ end }}

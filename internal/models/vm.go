@@ -27,6 +27,24 @@ type VM struct {
 	DiskPercent    float64        `json:"disk_percent"`
 	DiskPartition  string         `json:"disk_partition"`  // Primary partition being monitored (usually /)
 	FullPartitions []string       `json:"full_partitions"` // List of partitions over 90% full
+	Tags           []string       `json:"tags"`
+	// Memory metrics
+	MemoryUsed     float64        `json:"memory_used"`     // Memory used in MB
+	MemoryTotal    float64        `json:"memory_total"`    // Total memory in MB
+	MemoryPercent  float64        `json:"memory_percent"`  // Memory usage percentage
+	// Load average
+	LoadAverage    string         `json:"load_average"`    // 1, 5, 15 minute load averages
+	// Failed services
+	FailedServices int            `json:"failed_services"` // Count of failed systemd services
+	// Inode usage
+	InodeUsed      int64          `json:"inode_used"`      // Inodes used on root partition
+	InodeTotal     int64          `json:"inode_total"`     // Total inodes on root partition
+	InodePercent   float64        `json:"inode_percent"`   // Inode usage percentage
+	// Network stats
+	NetworkRxMB    float64        `json:"network_rx_mb"`   // Network received in MB
+	NetworkTxMB    float64        `json:"network_tx_mb"`   // Network transmitted in MB
+	// System info
+	KernelVersion  string         `json:"kernel_version"`  // Linux kernel version
 	LastChecked    time.Time      `json:"last_checked"`
 }
 

@@ -1,0 +1,528 @@
+{{ define "quick-summary.html" }}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Summary - Server Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="d-flex flex-column min-vh-100" data-auto-refresh="{{ if uiEnableAutoRefresh }}true{{ else }}false{{ end }}" data-refresh-seconds="{{ uiAutoRefreshSeconds }}">
+    <header class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item me-2">
+                        <button class="btn btn-sm btn-outline-light d-none d-lg-block" id="sidebar-toggle" title="Toggle sidebar">
+                            <i class="bi bi-layout-sidebar-inset"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-sm btn-outline-light" id="theme-toggle" title="Toggle dark mode">
+                            <i class="bi bi-moon-stars"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid flex-grow-1 py-4">
+        <div class="row g-3">
+            <nav class="col-lg-2 d-none d-lg-block" id="sidebar-nav">
+                <div class="sidebar">
+                    <ul class="nav flex-column gap-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/" data-page="dashboard">
+                                <i class="bi bi-house-door"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/quick-summary" data-page="quick-summary">
+                                <i class="bi bi-table"></i> Quick Summary
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/servers" data-page="servers">
+                                <i class="bi bi-server"></i> Servers
+                                <span class="badge bg-primary ms-auto">{{ getServerCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/vms" data-page="vms">
+                                <i class="bi bi-cpu"></i> Virtual Machines
+                                <span class="badge bg-info ms-auto">{{ getVMCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/switches" data-page="switches">
+                                <i class="bi bi-hdd-rack"></i> Switches
+                                <span class="badge bg-warning ms-auto">{{ getSwitchCount }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="small text-muted">
+                        <p class="mb-2"><strong>Monitoring Status</strong></p>
+                        <div class="d-flex flex-column gap-2" id="monitoring-controls">
+                            <span class="badge" id="monitoring-status">Checking...</span>
+                            <div class="btn-group-vertical btn-group-sm">
+                                <button class="btn btn-outline-success" id="start-monitoring" title="Start monitoring">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                <button class="btn btn-outline-danger" id="stop-monitoring" title="Stop monitoring">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                                <button class="btn btn-outline-warning" id="restart-monitoring" title="Restart monitoring">
+                                    <i class="bi bi-arrow-clockwise"></i> Restart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <main role="main" class="col-lg-10" id="main-content">
+                <div class="mb-4">
+                    <h2 class="h3 fw-bold mb-3">
+                        <i class="bi bi-table"></i> Quick Summary
+                    </h2>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                    {{ if gt (len .servers) 0 }}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {{ if eq .ActiveTab "servers" }}active{{ end }}" id="servers-tab" data-bs-toggle="tab" data-bs-target="#servers-content" type="button" role="tab" aria-controls="servers-content" aria-selected="{{ if eq .ActiveTab "servers" }}true{{ else }}false{{ end }}">
+                            <i class="bi bi-server"></i> Servers <span class="badge bg-primary">{{ len .servers }}</span>
+                        </button>
+                    </li>
+                    {{ end }}
+                    {{ if gt (len .vms) 0 }}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {{ if eq .ActiveTab "vms" }}active{{ end }}" id="vms-tab" data-bs-toggle="tab" data-bs-target="#vms-content" type="button" role="tab" aria-controls="vms-content" aria-selected="{{ if eq .ActiveTab "vms" }}true{{ else }}false{{ end }}">
+                            <i class="bi bi-cpu"></i> Virtual Machines <span class="badge bg-info">{{ len .vms }}</span>
+                        </button>
+                    </li>
+                    {{ end }}
+                    {{ if gt (len .switches) 0 }}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {{ if eq .ActiveTab "switches" }}active{{ end }}" id="switches-tab" data-bs-toggle="tab" data-bs-target="#switches-content" type="button" role="tab" aria-controls="switches-content" aria-selected="{{ if eq .ActiveTab "switches" }}true{{ else }}false{{ end }}">
+                            <i class="bi bi-hdd-rack"></i> Switches <span class="badge bg-warning">{{ len .switches }}</span>
+                        </button>
+                    </li>
+                    {{ end }}
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content">
+                    
+                    <!-- Servers Tab -->
+                    {{ if gt (len .servers) 0 }}
+                    <div class="tab-pane fade {{ if eq .ActiveTab "servers" }}show active{{ end }}" id="servers-content" role="tabpanel" aria-labelledby="servers-tab">
+                        <div class="card mt-3">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-server"></i> Servers
+                                </h6>
+                                <a href="/servers" class="btn btn-sm btn-outline-primary">View All Details</a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0 table-enhance" data-per-page="25">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>IP Address</th>
+                                            <th>Status</th>
+                                            <th>Uptime</th>
+                                            <th>Load Avg</th>
+                                            <th>Processes</th>
+                                            <th>Memory</th>
+                                            <th>Disk</th>
+                                            <th>Failed Svcs</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{ range .serversPage }}
+                                        <tr style="cursor: pointer;" onclick="window.location.href='/servers/{{ .ID }}'">
+                                            <td><strong>{{ .Name }}</strong></td>
+                                            <td><small class="text-monospace">{{ .IPAddress }}</small></td>
+                                            <td>
+                                                {{ if eq .PingStatus "online" }}
+                                                    <span class="badge bg-success"><i class="bi bi-circle-fill"></i></span>
+                                                {{ else }}
+                                                    <span class="badge bg-danger"><i class="bi bi-circle-fill"></i></span>
+                                                {{ end }}
+                                            </td>
+                                            <td><small>{{ .Uptime }}</small></td>
+                                            <td><small>{{ .LoadAverage }}</small></td>
+                                            <td><small class="badge bg-light text-dark">{{ .Processes }}</small></td>
+                                            <td>
+                                                <small>
+                                                    {{ printf "%.0f" .MemoryPercent }}%
+                                                    {{ if gt .MemoryPercent 80.0 }}<i class="bi bi-exclamation-circle-fill text-danger"></i>{{ end }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    {{ printf "%.0f" .DiskPercent }}%
+                                                    {{ if gt .DiskPercent 85.0 }}<i class="bi bi-exclamation-circle-fill text-danger"></i>{{ end }}
+                                                </small>
+                                            </td>
+                                            <td><small class="badge {{ if gt .FailedServices 0 }}bg-warning{{ else }}bg-success{{ end }}">{{ .FailedServices }}</small></td>
+                                        </tr>
+                                        {{ end }}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Servers Pagination -->
+                            {{ if gt .ServersTotalPages 1 }}
+                            <div class="card-footer bg-light">
+                                <nav aria-label="Servers pagination">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        {{ if gt .ServersCurrentPage 1 }}
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=servers&servers_page=1">First</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=servers&servers_page={{ sub .ServersCurrentPage 1 }}">Previous</a>
+                                        </li>
+                                        {{ else }}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">First</span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Previous</span>
+                                        </li>
+                                        {{ end }}
+                                        
+                                        {{ range $i := until .ServersTotalPages }}
+                                        {{ $pageNum := add $i 1 }}
+                                        {{ if eq $pageNum $.ServersCurrentPage }}
+                                        <li class="page-item active"><span class="page-link">{{ $pageNum }}</span></li>
+                                        {{ else }}
+                                        <li class="page-item"><a class="page-link" href="/quick-summary?tab=servers&servers_page={{ $pageNum }}">{{ $pageNum }}</a></li>
+                                        {{ end }}
+                                        {{ end }}
+                                        
+                                        {{ if lt .ServersCurrentPage .ServersTotalPages }}
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=servers&servers_page={{ add .ServersCurrentPage 1 }}">Next</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=servers&servers_page={{ .ServersTotalPages }}">Last</a>
+                                        </li>
+                                        {{ else }}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Next</span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Last</span>
+                                        </li>
+                                        {{ end }}
+                                    </ul>
+                                </nav>
+                            </div>
+                            {{ end }}
+                        </div>
+                    </div>
+                    {{ end }}
+
+                    <!-- VMs Tab -->
+                    {{ if gt (len .vms) 0 }}
+                    <div class="tab-pane fade {{ if eq .ActiveTab "vms" }}show active{{ end }}" id="vms-content" role="tabpanel" aria-labelledby="vms-tab">
+                        <div class="card mt-3">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-cpu"></i> Virtual Machines
+                                </h6>
+                                <a href="/vms" class="btn btn-sm btn-outline-primary">View All Details</a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0 table-enhance" data-per-page="25">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Host</th>
+                                            <th>Status</th>
+                                            <th>Uptime</th>
+                                            <th>Load Avg</th>
+                                            <th>Processes</th>
+                                            <th>Memory</th>
+                                            <th>Disk</th>
+                                            <th>Failed Svcs</th>
+                                            <th>Streams</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{ range .vmsPage }}
+                                        <tr style="cursor: pointer;" onclick="window.location.href='/vms/{{ .ID }}'">
+                                            <td><strong>{{ .Name }}</strong></td>
+                                            <td><small>{{ .HostServerID }}</small></td>
+                                            <td>
+                                                {{ if eq .PingStatus "online" }}
+                                                    <span class="badge bg-success"><i class="bi bi-circle-fill"></i></span>
+                                                {{ else }}
+                                                    <span class="badge bg-danger"><i class="bi bi-circle-fill"></i></span>
+                                                {{ end }}
+                                            </td>
+                                            <td><small>{{ .Uptime }}</small></td>
+                                            <td><small>{{ .LoadAverage }}</small></td>
+                                            <td><small class="badge bg-light text-dark">{{ .Processes }}</small></td>
+                                            <td>
+                                                <small>
+                                                    {{ printf "%.0f" .MemoryPercent }}%
+                                                    {{ if gt .MemoryPercent 80.0 }}<i class="bi bi-exclamation-circle-fill text-danger"></i>{{ end }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    {{ printf "%.0f" .DiskPercent }}%
+                                                    {{ if gt .DiskPercent 85.0 }}<i class="bi bi-exclamation-circle-fill text-danger"></i>{{ end }}
+                                                </small>
+                                            </td>
+                                            <td><small class="badge {{ if gt .FailedServices 0 }}bg-warning{{ else }}bg-success{{ end }}">{{ .FailedServices }}</small></td>
+                                            <td><small class="badge bg-light text-dark">{{ len .Streams }}</small></td>
+                                        </tr>
+                                        {{ end }}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- VMs Pagination -->
+                            {{ if gt .VMsTotalPages 1 }}
+                            <div class="card-footer bg-light">
+                                <nav aria-label="VMs pagination">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        {{ if gt .VMsCurrentPage 1 }}
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=vms&vms_page=1">First</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=vms&vms_page={{ sub .VMsCurrentPage 1 }}">Previous</a>
+                                        </li>
+                                        {{ else }}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">First</span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Previous</span>
+                                        </li>
+                                        {{ end }}
+                                        
+                                        {{ range $i := until .VMsTotalPages }}
+                                        {{ $pageNum := add $i 1 }}
+                                        {{ if eq $pageNum $.VMsCurrentPage }}
+                                        <li class="page-item active"><span class="page-link">{{ $pageNum }}</span></li>
+                                        {{ else }}
+                                        <li class="page-item"><a class="page-link" href="/quick-summary?tab=vms&vms_page={{ $pageNum }}">{{ $pageNum }}</a></li>
+                                        {{ end }}
+                                        {{ end }}
+                                        
+                                        {{ if lt .VMsCurrentPage .VMsTotalPages }}
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=vms&vms_page={{ add .VMsCurrentPage 1 }}">Next</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=vms&vms_page={{ .VMsTotalPages }}">Last</a>
+                                        </li>
+                                        {{ else }}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Next</span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Last</span>
+                                        </li>
+                                        {{ end }}
+                                    </ul>
+                                </nav>
+                            </div>
+                            {{ end }}
+                        </div>
+                    </div>
+                    {{ end }}
+
+                    <!-- Switches Tab -->
+                    {{ if gt (len .switches) 0 }}
+                    <div class="tab-pane fade {{ if eq .ActiveTab "switches" }}show active{{ end }}" id="switches-content" role="tabpanel" aria-labelledby="switches-tab">
+                        <div class="card mt-3">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-hdd-rack"></i> Network Switches
+                                </h6>
+                                <a href="/switches" class="btn btn-sm btn-outline-primary">View All Details</a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0 table-enhance" data-per-page="25">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>IP Address</th>
+                                            <th>Status</th>
+                                            <th>Uptime</th>
+                                            <th>Memory</th>
+                                            <th>Disk</th>
+                                            <th>OpenFlow</th>
+                                            <th>Flows</th>
+                                            <th>Ports</th>
+                                            <th>Network</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{ range .switchesPage }}
+                                        <tr style="cursor: pointer;" onclick="window.location.href='/switches/{{ .ID }}'">
+                                            <td><strong>{{ .Name }}</strong></td>
+                                            <td><small class="text-monospace">{{ .IPAddress }}</small></td>
+                                            <td>
+                                                {{ if eq .PingStatus "online" }}
+                                                    <span class="badge bg-success"><i class="bi bi-circle-fill"></i></span>
+                                                {{ else }}
+                                                    <span class="badge bg-danger"><i class="bi bi-circle-fill"></i></span>
+                                                {{ end }}
+                                            </td>
+                                            <td><small>{{ .Uptime }}</small></td>
+                                            <td>
+                                                <small>
+                                                    {{ printf "%.0f" .MemoryPercent }}%
+                                                    {{ if gt .MemoryPercent 80.0 }}<i class="bi bi-exclamation-circle-fill text-danger"></i>{{ end }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    {{ printf "%.0f" .DiskPercent }}%
+                                                    {{ if gt .DiskPercent 85.0 }}<i class="bi bi-exclamation-circle-fill text-danger"></i>{{ end }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                {{ if eq .OpenFlowStatus "active" }}
+                                                    <span class="badge bg-info">v{{ .OpenFlowVersion }}</span>
+                                                {{ else if eq .OpenFlowStatus "inactive" }}
+                                                    <span class="badge bg-warning">Inactive</span>
+                                                {{ else }}
+                                                    <span class="badge bg-secondary">{{ .OpenFlowStatus }}</span>
+                                                {{ end }}
+                                            </td>
+                                            <td><small class="badge bg-light text-dark">{{ .FlowCount }}</small></td>
+                                            <td><small class="badge bg-light text-dark">{{ .PortCount }}</small></td>
+                                            <td><small>↓ {{ printf "%.0f" .NetworkRxMB }}MB ↑ {{ printf "%.0f" .NetworkTxMB }}MB</small></td>
+                                        </tr>
+                                        {{ end }}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Switches Pagination -->
+                            {{ if gt .SwitchesTotalPages 1 }}
+                            <div class="card-footer bg-light">
+                                <nav aria-label="Switches pagination">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        {{ if gt .SwitchesCurrentPage 1 }}
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=switches&switches_page=1">First</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=switches&switches_page={{ sub .SwitchesCurrentPage 1 }}">Previous</a>
+                                        </li>
+                                        {{ else }}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">First</span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Previous</span>
+                                        </li>
+                                        {{ end }}
+                                        
+                                        {{ range $i := until .SwitchesTotalPages }}
+                                        {{ $pageNum := add $i 1 }}
+                                        {{ if eq $pageNum $.SwitchesCurrentPage }}
+                                        <li class="page-item active"><span class="page-link">{{ $pageNum }}</span></li>
+                                        {{ else }}
+                                        <li class="page-item"><a class="page-link" href="/quick-summary?tab=switches&switches_page={{ $pageNum }}">{{ $pageNum }}</a></li>
+                                        {{ end }}
+                                        {{ end }}
+                                        
+                                        {{ if lt .SwitchesCurrentPage .SwitchesTotalPages }}
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=switches&switches_page={{ add .SwitchesCurrentPage 1 }}">Next</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="/quick-summary?tab=switches&switches_page={{ .SwitchesTotalPages }}">Last</a>
+                                        </li>
+                                        {{ else }}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Next</span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Last</span>
+                                        </li>
+                                        {{ end }}
+                                    </ul>
+                                </nav>
+                            </div>
+                            {{ end }}
+                        </div>
+                    </div>
+                    {{ end }}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Footer - Sticky at bottom -->
+    <footer class="footer mt-auto py-3 bg-body-secondary border-top">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-muted">
+                    <small>&copy; {{ currentYear }} Server Dashboard</small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        <i class="bi bi-code-square"></i> {{ appVersion }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        window.dashboardUI = {
+            enableAutoRefresh: document.body.dataset.autoRefresh === 'true',
+            autoRefreshSeconds: parseInt(document.body.dataset.refreshSeconds, 10)
+        };
+
+        // Enforce single visible tab pane and keep nav state in sync
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+
+            tabs.forEach(btn => {
+                btn.addEventListener('shown.bs.tab', function() {
+                    const targetSelector = this.getAttribute('data-bs-target') || this.dataset.bsTarget;
+                    const targetPane = targetSelector ? document.querySelector(targetSelector) : null;
+
+                    // Deactivate all panes
+                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show', 'active'));
+
+                    // Activate the target pane
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                    }
+
+                    // Sync nav active state
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/enhancements.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
+{{ end }}

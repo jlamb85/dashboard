@@ -14,6 +14,7 @@ import (
 var (
 	ServersCache []models.Server
 	VMsCache     []models.VM
+	SwitchesCache []models.Switch
 	Config       *config.Config
 	
 	// Monitoring control
@@ -61,6 +62,7 @@ func InitializeCache(cfg *config.Config) {
 		srv.DiskPercent = 0
 		srv.DiskPartition = "/"
 		srv.FullPartitions = []string{}
+		srv.Tags = append([]string{}, srvCfg.Tags...)
 		srv.LastChecked = time.Now()
 		ServersCache[i] = *srv
 	}
@@ -93,15 +95,43 @@ func InitializeCache(cfg *config.Config) {
 		VMsCache[i] = *vm
 	}
 	
+	// Initialize Switches
+	SwitchesCache = make([]models.Switch, len(cfg.Switches))
+	for i, swCfg := range cfg.Switches {
+		sw := models.NewSwitch(swCfg.ID, swCfg.Name, swCfg.IPAddress, swCfg.Hostname, swCfg.Port)
+		// Set default values
+		sw.Status = "offline"
+		sw.PingStatus = "offline"
+		sw.Uptime = "N/A"
+		sw.Processes = 0
+		sw.DiskUsage = 0
+		sw.DiskTotal = 50.0 // Switches typically have small storage
+		sw.DiskPercent = 0
+		sw.DiskPartition = "/"
+		sw.FullPartitions = []string{}
+		sw.ControllerIP = swCfg.ControllerIP
+		sw.OpenFlowVersion = swCfg.OpenFlowVersion
+		sw.OpenFlowStatus = "unknown"
+		sw.FlowCount = 0
+		sw.PortCount = 0
+		sw.Tags = append([]string{}, swCfg.Tags...)
+		sw.LastChecked = time.Now()
+		SwitchesCache[i] = *sw
+	}
+	
 	// Set monitoring interval (default 5 seconds)
 	monitoringInterval = 5 * time.Second
 	stopMonitoring = make(chan bool, 1)
 	isMonitoring = true
+
+	// Start synthetic checks
+	InitSynthetic(cfg)
 	
 	// Run initial monitoring check immediately (non-blocking)
 	go func() {
 		MonitorAllServers()
 		MonitorAllVMs()
+		MonitorAllSwitches()
 	}()
 	
 	// Start background monitoring in goroutine to avoid blocking initialization
@@ -122,6 +152,7 @@ func StartBackgroundMonitoring() {
 			go func() {
 				MonitorAllServers()
 				MonitorAllVMs()
+				MonitorAllSwitches()
 			}()
 		}
 	}
@@ -180,6 +211,58 @@ func GetMonitoringStatus() bool {
 	return isMonitoring
 }
 
+// getSwitchSSHClient creates a switch-specific SSH client or returns the global client
+func getSwitchSSHClient(sw *models.Switch) *SSHClient {
+	// Find the switch config to get credentials
+	var swCfg *config.SwitchConfig
+	for _, cfg := range Config.Switches {
+		if cfg.ID == sw.ID {
+			swCfg = &cfg
+			break
+		}
+	}
+	
+	if swCfg == nil {
+		// Config not found, use global client
+		return sshClient
+	}
+	
+	// Check if switch has custom SSH credentials
+	hasCustomCreds := swCfg.SSHUsername != "" || swCfg.SSHPassword != "" || swCfg.SSHKeyPath != ""
+	
+	if !hasCustomCreds {
+		// No custom credentials, use global client
+		return sshClient
+	}
+	
+	// Use switch-specific credentials, fall back to global for missing values
+	username := swCfg.SSHUsername
+	if username == "" {
+		username = Config.SSH.Username
+	}
+	
+	password := swCfg.SSHPassword
+	if password == "" {
+		password = Config.SSH.Password
+	}
+	
+	keyPath := swCfg.SSHKeyPath
+	if keyPath == "" {
+		keyPath = Config.SSH.PrivateKeyPath
+	}
+	
+	timeout := Config.SSH.TimeoutSeconds
+	
+	// Create switch-specific SSH client
+	client, err := NewSSHClient(username, keyPath, password, timeout)
+	if err != nil {
+		fmt.Printf("Warning: Failed to create SSH client for switch %s: %v, falling back to global client\n", sw.Name, err)
+		return sshClient
+	}
+	
+	return client
+}
+
 // MonitorAllServers checks status of all servers
 func MonitorAllServers() {
 	for i := range ServersCache {
@@ -191,6 +274,13 @@ func MonitorAllServers() {
 func MonitorAllVMs() {
 	for i := range VMsCache {
 		MonitorVM(&VMsCache[i])
+	}
+}
+
+// MonitorAllSwitches checks status of all switches
+func MonitorAllSwitches() {
+	for i := range SwitchesCache {
+		MonitorSwitch(&SwitchesCache[i])
 	}
 }
 
@@ -243,6 +333,39 @@ func useServerMockData(srv *models.Server) {
 	srv.DiskTotal = 1000.0
 	srv.DiskUsage = generateDiskUsage(srv.DiskTotal, 30, 70) // 30-70% usage
 	srv.DiskPercent = (srv.DiskUsage / srv.DiskTotal) * 100
+	
+	// Memory metrics
+	srv.MemoryTotal = float64(rand.Intn(48000) + 16000) // 16-64 GB in MB
+	srv.MemoryUsed = generateDiskUsage(srv.MemoryTotal, 40, 80) // 40-80% usage
+	srv.MemoryPercent = (srv.MemoryUsed / srv.MemoryTotal) * 100
+	
+	// Load average - generate realistic values
+	load1 := float64(rand.Intn(400)+50) / 100.0  // 0.5-4.5
+	load5 := float64(rand.Intn(350)+60) / 100.0  // 0.6-4.1
+	load15 := float64(rand.Intn(300)+70) / 100.0 // 0.7-3.7
+	srv.LoadAverage = fmt.Sprintf("%.2f %.2f %.2f", load1, load5, load15)
+	
+	// Failed services - usually 0, occasionally 1-2
+	if rand.Float64() < 0.2 { // 20% chance
+		srv.FailedServices = rand.Intn(2) + 1
+	} else {
+		srv.FailedServices = 0
+	}
+	
+	// Inode usage
+	srv.InodeTotal = int64(rand.Intn(5000000) + 1000000) // 1M-6M inodes
+	srv.InodeUsed = int64(float64(srv.InodeTotal) * (float64(rand.Intn(40)+20) / 100.0)) // 20-60%
+	if srv.InodeTotal > 0 {
+		srv.InodePercent = (float64(srv.InodeUsed) / float64(srv.InodeTotal)) * 100
+	}
+	
+	// Network stats - cumulative MB since boot
+	srv.NetworkRxMB = float64(rand.Intn(500000) + 10000) // 10GB-500GB
+	srv.NetworkTxMB = float64(rand.Intn(200000) + 5000)  // 5GB-200GB
+	
+	// Kernel version - common versions
+	kernels := []string{"5.15.0-91-generic", "6.1.0-17-amd64", "5.10.0-27-arm64", "6.5.0-14-generic"}
+	srv.KernelVersion = kernels[rand.Intn(len(kernels))]
 }
 
 // MonitorVM performs health checks on a VM
@@ -314,6 +437,137 @@ func useVMMockData(vm *models.VM) {
 	vm.DiskTotal = 500.0
 	vm.DiskUsage = generateDiskUsage(vm.DiskTotal, 20, 60) // 20-60% usage
 	vm.DiskPercent = (vm.DiskUsage / vm.DiskTotal) * 100
+	
+	// Memory metrics
+	vm.MemoryTotal = float64(rand.Intn(24000) + 4000) // 4-28 GB in MB
+	vm.MemoryUsed = generateDiskUsage(vm.MemoryTotal, 35, 75) // 35-75% usage
+	vm.MemoryPercent = (vm.MemoryUsed / vm.MemoryTotal) * 100
+	
+	// Load average - generate realistic values
+	load1 := float64(rand.Intn(250)+30) / 100.0  // 0.3-2.8
+	load5 := float64(rand.Intn(220)+40) / 100.0  // 0.4-2.6
+	load15 := float64(rand.Intn(200)+50) / 100.0 // 0.5-2.5
+	vm.LoadAverage = fmt.Sprintf("%.2f %.2f %.2f", load1, load5, load15)
+	
+	// Failed services - usually 0, occasionally 1
+	if rand.Float64() < 0.15 { // 15% chance
+		vm.FailedServices = 1
+	} else {
+		vm.FailedServices = 0
+	}
+	
+	// Inode usage
+	vm.InodeTotal = int64(rand.Intn(3000000) + 500000) // 500K-3.5M inodes
+	vm.InodeUsed = int64(float64(vm.InodeTotal) * (float64(rand.Intn(35)+15) / 100.0)) // 15-50%
+	if vm.InodeTotal > 0 {
+		vm.InodePercent = (float64(vm.InodeUsed) / float64(vm.InodeTotal)) * 100
+	}
+	
+	// Network stats - cumulative MB since boot
+	vm.NetworkRxMB = float64(rand.Intn(200000) + 5000)  // 5GB-200GB
+	vm.NetworkTxMB = float64(rand.Intn(100000) + 2000)  // 2GB-100GB
+	
+	// Kernel version - common versions
+	kernels := []string{"5.15.0-91-generic", "6.1.0-17-amd64", "5.10.0-27-arm64", "6.5.0-14-generic"}
+	vm.KernelVersion = kernels[rand.Intn(len(kernels))]
+}
+
+// MonitorSwitch performs health checks on a switch
+func MonitorSwitch(sw *models.Switch) {
+	// When using mock data, always show as online (no network checks needed)
+	if Config.Monitoring.UseMockData {
+		sw.PingStatus = "online"
+		sw.Status = "online"
+		useSwitchMockData(sw)
+		sw.LastChecked = time.Now()
+		return
+	}
+	
+	// Production mode: Check ping status using TCP connectivity
+	sw.PingStatus = CheckPingStatus(sw.IPAddress)
+	
+	if sw.PingStatus == "online" {
+		sw.Status = "online"
+		
+		// Use real SSH monitoring if available and configured
+		if Config.SSH.Enabled {
+			// Get switch-specific SSH client or use global client
+			client := getSwitchSSHClient(sw)
+			if client != nil {
+				err := client.GetRealSwitchMetrics(sw)
+				if err != nil {
+					// Fallback to mock data on error
+					fmt.Printf("SSH monitoring failed for %s: %v, using mock data\n", sw.Name, err)
+					useSwitchMockData(sw)
+				}
+			} else {
+				// Use mock data if no client available
+				useSwitchMockData(sw)
+			}
+		} else {
+			// Use mock data for development
+			useSwitchMockData(sw)
+		}
+	} else {
+		sw.Status = "offline"
+		// Reset metrics for offline switches
+		sw.Uptime = "N/A"
+		sw.Processes = 0
+		sw.DiskUsage = 0
+		sw.DiskTotal = 50.0
+		sw.DiskPercent = 0
+		sw.OpenFlowStatus = "offline"
+		sw.FlowCount = 0
+	}
+	
+	sw.LastChecked = time.Now()
+}
+
+// useSwitchMockData generates mock metrics for a switch
+func useSwitchMockData(sw *models.Switch) {
+	sw.Uptime = GenerateUptime()
+	sw.Processes = rand.Intn(80) + 20 // 20-100 processes (lighter than servers)
+	sw.DiskTotal = 50.0 // Small Debian typically 8-64GB
+	sw.DiskUsage = generateDiskUsage(sw.DiskTotal, 15, 40) // 15-40% usage
+	sw.DiskPercent = (sw.DiskUsage / sw.DiskTotal) * 100
+	
+	// Memory metrics - switches have less RAM
+	sw.MemoryTotal = float64(rand.Intn(3000) + 1000) // 1-4 GB in MB
+	sw.MemoryUsed = generateDiskUsage(sw.MemoryTotal, 30, 60) // 30-60% usage
+	sw.MemoryPercent = (sw.MemoryUsed / sw.MemoryTotal) * 100
+	
+	// Load average - generate realistic low values for switches
+	load1 := float64(rand.Intn(100)+10) / 100.0  // 0.1-1.1
+	load5 := float64(rand.Intn(90)+15) / 100.0   // 0.15-1.05
+	load15 := float64(rand.Intn(80)+20) / 100.0  // 0.2-1.0
+	sw.LoadAverage = fmt.Sprintf("%.2f %.2f %.2f", load1, load5, load15)
+	
+	// Failed services - usually 0
+	if rand.Float64() < 0.05 { // 5% chance
+		sw.FailedServices = 1
+	} else {
+		sw.FailedServices = 0
+	}
+	
+	// Inode usage - small for switches
+	sw.InodeTotal = int64(rand.Intn(500000) + 200000) // 200K-700K inodes
+	sw.InodeUsed = int64(float64(sw.InodeTotal) * (float64(rand.Intn(25)+10) / 100.0)) // 10-35%
+	if sw.InodeTotal > 0 {
+		sw.InodePercent = (float64(sw.InodeUsed) / float64(sw.InodeTotal)) * 100
+	}
+	
+	// Network stats - switches handle lots of traffic
+	sw.NetworkRxMB = float64(rand.Intn(500000) + 50000)  // 50GB-500GB
+	sw.NetworkTxMB = float64(rand.Intn(500000) + 50000)  // 50GB-500GB
+	
+	// Kernel version - Debian versions
+	kernels := []string{"6.1.0-17-amd64", "5.10.0-27-amd64", "6.5.0-14-amd64"}
+	sw.KernelVersion = kernels[rand.Intn(len(kernels))]
+	
+	// OpenFlow specific metrics
+	sw.OpenFlowStatus = "active"
+	sw.FlowCount = rand.Intn(500) + 50 // 50-550 flow rules
+	sw.PortCount = rand.Intn(16) + 8   // 8-24 ports
 }
 
 // CheckPingStatus attempts TCP checks on multiple ports for connectivity
@@ -387,6 +641,11 @@ func GetAllServers() ([]models.Server, error) {
 // GetAllVMs returns all configured VMs
 func GetAllVMs() ([]models.VM, error) {
 	return VMsCache, nil
+}
+
+// GetAllSwitches returns all configured switches
+func GetAllSwitches() ([]models.Switch, error) {
+	return SwitchesCache, nil
 }
 
 // CheckServerStatus checks the status of a specific server

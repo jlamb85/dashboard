@@ -121,6 +121,63 @@ func (c *SSHClient) GetRealServerMetrics(srv *models.Server) error {
 		srv.Processes = count
 	}
 
+	// Get memory usage: free -m | grep Mem | awk '{print $3,$2}'
+	memoryCmd := "free -m | grep Mem | awk '{print $3,$2}'"
+	memoryOutput, err := c.executeCommand(srv.IPAddress, srv.Port, memoryCmd)
+	if err == nil {
+		var used, total int
+		fmt.Sscanf(strings.TrimSpace(memoryOutput), "%d %d", &used, &total)
+		srv.MemoryUsed = float64(used)
+		srv.MemoryTotal = float64(total)
+		if total > 0 {
+			srv.MemoryPercent = (float64(used) / float64(total)) * 100
+		}
+	}
+
+	// Get load average: cat /proc/loadavg | awk '{print $1, $2, $3}'
+	loadCmd := "cat /proc/loadavg | awk '{print $1, $2, $3}'"
+	loadOutput, err := c.executeCommand(srv.IPAddress, srv.Port, loadCmd)
+	if err == nil {
+		srv.LoadAverage = strings.TrimSpace(loadOutput)
+	}
+
+	// Get failed systemd services count: systemctl --failed --no-pager | grep -c 'loaded.*failed'
+	failedCmd := "systemctl --failed --no-pager 2>/dev/null | grep -c 'loaded.*failed' || echo 0"
+	failedOutput, err := c.executeCommand(srv.IPAddress, srv.Port, failedCmd)
+	if err == nil {
+		count, _ := strconv.Atoi(strings.TrimSpace(failedOutput))
+		srv.FailedServices = count
+	}
+
+	// Get inode usage: df -i / | tail -1 | awk '{print $3,$2,$5}'
+	inodeCmd := "df -i / | tail -1 | awk '{print $3,$2,$5}'"
+	inodeOutput, err := c.executeCommand(srv.IPAddress, srv.Port, inodeCmd)
+	if err == nil {
+		var used, total int64
+		var percentStr string
+		fmt.Sscanf(strings.TrimSpace(inodeOutput), "%d %d %s", &used, &total, &percentStr)
+		srv.InodeUsed = used
+		srv.InodeTotal = total
+		srv.InodePercent = parsePercent(percentStr)
+	}
+
+	// Get network stats: cat /proc/net/dev | grep -E '^ *(eth0|enp|ens|wlan0):' | awk '{rx+=$2; tx+=$10} END {print rx/1048576, tx/1048576}'
+	networkCmd := "cat /proc/net/dev | grep -v 'lo:' | grep ':' | awk '{rx+=$2; tx+=$10} END {printf \"%.2f %.2f\", rx/1048576, tx/1048576}'"
+	networkOutput, err := c.executeCommand(srv.IPAddress, srv.Port, networkCmd)
+	if err == nil {
+		var rx, tx float64
+		fmt.Sscanf(strings.TrimSpace(networkOutput), "%f %f", &rx, &tx)
+		srv.NetworkRxMB = rx
+		srv.NetworkTxMB = tx
+	}
+
+	// Get kernel version: uname -r
+	kernelCmd := "uname -r"
+	kernelOutput, err := c.executeCommand(srv.IPAddress, srv.Port, kernelCmd)
+	if err == nil {
+		srv.KernelVersion = strings.TrimSpace(kernelOutput)
+	}
+
 	return nil
 }
 
@@ -162,6 +219,63 @@ func (c *SSHClient) GetRealVMMetrics(vm *models.VM) error {
 		vm.Processes = count
 	}
 
+	// Get memory usage: free -m | grep Mem | awk '{print $3,$2}'
+	memoryCmd := "free -m | grep Mem | awk '{print $3,$2}'"
+	memoryOutput, err := c.executeCommand(vm.IPAddress, vm.Port, memoryCmd)
+	if err == nil {
+		var used, total int
+		fmt.Sscanf(strings.TrimSpace(memoryOutput), "%d %d", &used, &total)
+		vm.MemoryUsed = float64(used)
+		vm.MemoryTotal = float64(total)
+		if total > 0 {
+			vm.MemoryPercent = (float64(used) / float64(total)) * 100
+		}
+	}
+
+	// Get load average: cat /proc/loadavg | awk '{print $1, $2, $3}'
+	loadCmd := "cat /proc/loadavg | awk '{print $1, $2, $3}'"
+	loadOutput, err := c.executeCommand(vm.IPAddress, vm.Port, loadCmd)
+	if err == nil {
+		vm.LoadAverage = strings.TrimSpace(loadOutput)
+	}
+
+	// Get failed systemd services count: systemctl --failed --no-pager | grep -c 'loaded.*failed'
+	failedCmd := "systemctl --failed --no-pager 2>/dev/null | grep -c 'loaded.*failed' || echo 0"
+	failedOutput, err := c.executeCommand(vm.IPAddress, vm.Port, failedCmd)
+	if err == nil {
+		count, _ := strconv.Atoi(strings.TrimSpace(failedOutput))
+		vm.FailedServices = count
+	}
+
+	// Get inode usage: df -i / | tail -1 | awk '{print $3,$2,$5}'
+	inodeCmd := "df -i / | tail -1 | awk '{print $3,$2,$5}'"
+	inodeOutput, err := c.executeCommand(vm.IPAddress, vm.Port, inodeCmd)
+	if err == nil {
+		var used, total int64
+		var percentStr string
+		fmt.Sscanf(strings.TrimSpace(inodeOutput), "%d %d %s", &used, &total, &percentStr)
+		vm.InodeUsed = used
+		vm.InodeTotal = total
+		vm.InodePercent = parsePercent(percentStr)
+	}
+
+	// Get network stats: cat /proc/net/dev | grep -v 'lo:' | grep ':' | awk '{rx+=$2; tx+=$10} END {printf "%.2f %.2f", rx/1048576, tx/1048576}'
+	networkCmd := "cat /proc/net/dev | grep -v 'lo:' | grep ':' | awk '{rx+=$2; tx+=$10} END {printf \"%.2f %.2f\", rx/1048576, tx/1048576}'"
+	networkOutput, err := c.executeCommand(vm.IPAddress, vm.Port, networkCmd)
+	if err == nil {
+		var rx, tx float64
+		fmt.Sscanf(strings.TrimSpace(networkOutput), "%f %f", &rx, &tx)
+		vm.NetworkRxMB = rx
+		vm.NetworkTxMB = tx
+	}
+
+	// Get kernel version: uname -r
+	kernelCmd := "uname -r"
+	kernelOutput, err := c.executeCommand(vm.IPAddress, vm.Port, kernelCmd)
+	if err == nil {
+		vm.KernelVersion = strings.TrimSpace(kernelOutput)
+	}
+
 	return nil
 }
 
@@ -199,4 +313,150 @@ func (c *SSHClient) checkFullPartitions(host string, port int) []string {
 	}
 
 	return fullPartitions
+}
+// GetRealSwitchMetrics queries real switch metrics via SSH
+func (c *SSHClient) GetRealSwitchMetrics(sw *models.Switch) error {
+	// Get disk usage for root partition
+	diskCmd := "df -BG / | tail -1 | awk '{print $3,$2,$5}'"
+	diskOutput, err := c.executeCommand(sw.IPAddress, sw.Port, diskCmd)
+	if err != nil {
+		return fmt.Errorf("disk query failed: %w", err)
+	}
+
+	var usedStr, totalStr, percentStr string
+	fmt.Sscanf(strings.TrimSpace(diskOutput), "%s %s %s", &usedStr, &totalStr, &percentStr)
+	
+	sw.DiskUsage = parseGigabytes(usedStr)
+	sw.DiskTotal = parseGigabytes(totalStr)
+	sw.DiskPercent = parsePercent(percentStr)
+	sw.DiskPartition = "/"
+
+	// Check all partitions for critical disk usage (>90%)
+	sw.FullPartitions = c.checkFullPartitions(sw.IPAddress, sw.Port)
+
+	// Get uptime
+	uptimeCmd := "uptime -p 2>/dev/null || uptime | awk '{print $3, $4}'"
+	uptimeOutput, err := c.executeCommand(sw.IPAddress, sw.Port, uptimeCmd)
+	if err == nil {
+		sw.Uptime = strings.TrimSpace(uptimeOutput)
+		if sw.Uptime == "" {
+			sw.Uptime = "N/A"
+		}
+	}
+
+	// Get process count
+	processCmd := "ps aux | wc -l"
+	processOutput, err := c.executeCommand(sw.IPAddress, sw.Port, processCmd)
+	if err == nil {
+		count, _ := strconv.Atoi(strings.TrimSpace(processOutput))
+		sw.Processes = count
+	}
+
+	// Get memory usage
+	memoryCmd := "free -m | grep Mem | awk '{print $3,$2}'"
+	memoryOutput, err := c.executeCommand(sw.IPAddress, sw.Port, memoryCmd)
+	if err == nil {
+		var used, total int
+		fmt.Sscanf(strings.TrimSpace(memoryOutput), "%d %d", &used, &total)
+		sw.MemoryUsed = float64(used)
+		sw.MemoryTotal = float64(total)
+		if total > 0 {
+			sw.MemoryPercent = (float64(used) / float64(total)) * 100
+		}
+	}
+
+	// Get load average
+	loadCmd := "cat /proc/loadavg | awk '{print $1, $2, $3}'"
+	loadOutput, err := c.executeCommand(sw.IPAddress, sw.Port, loadCmd)
+	if err == nil {
+		sw.LoadAverage = strings.TrimSpace(loadOutput)
+	}
+
+	// Get failed systemd services count
+	failedCmd := "systemctl --failed --no-pager 2>/dev/null | grep -c 'loaded.*failed' || echo 0"
+	failedOutput, err := c.executeCommand(sw.IPAddress, sw.Port, failedCmd)
+	if err == nil {
+		count, _ := strconv.Atoi(strings.TrimSpace(failedOutput))
+		sw.FailedServices = count
+	}
+
+	// Get inode usage
+	inodeCmd := "df -i / | tail -1 | awk '{print $3,$2,$5}'"
+	inodeOutput, err := c.executeCommand(sw.IPAddress, sw.Port, inodeCmd)
+	if err == nil {
+		var used, total int64
+		var percentStr string
+		fmt.Sscanf(strings.TrimSpace(inodeOutput), "%d %d %s", &used, &total, &percentStr)
+		sw.InodeUsed = used
+		sw.InodeTotal = total
+		sw.InodePercent = parsePercent(percentStr)
+	}
+
+	// Get network stats
+	networkCmd := "cat /proc/net/dev | grep -v 'lo:' | grep ':' | awk '{rx+=$2; tx+=$10} END {printf \"%.2f %.2f\", rx/1048576, tx/1048576}'"
+	networkOutput, err := c.executeCommand(sw.IPAddress, sw.Port, networkCmd)
+	if err == nil {
+		var rx, tx float64
+		fmt.Sscanf(strings.TrimSpace(networkOutput), "%f %f", &rx, &tx)
+		sw.NetworkRxMB = rx
+		sw.NetworkTxMB = tx
+	}
+
+	// Get kernel version
+	kernelCmd := "uname -r"
+	kernelOutput, err := c.executeCommand(sw.IPAddress, sw.Port, kernelCmd)
+	if err == nil {
+		sw.KernelVersion = strings.TrimSpace(kernelOutput)
+	}
+
+	// Get OpenFlow status (check if ovs-vsctl is available)
+	ovsStatusCmd := "command -v ovs-vsctl >/dev/null 2>&1 && echo 'installed' || echo 'not_installed'"
+	ovsStatusOutput, err := c.executeCommand(sw.IPAddress, sw.Port, ovsStatusCmd)
+	if err == nil && strings.Contains(strings.TrimSpace(ovsStatusOutput), "installed") {
+		// Get OpenFlow controller connection status
+		controllerCmd := "ovs-vsctl get-controller br0 2>/dev/null || echo 'N/A'"
+		controllerOutput, err := c.executeCommand(sw.IPAddress, sw.Port, controllerCmd)
+		if err == nil {
+			controller := strings.TrimSpace(controllerOutput)
+			if controller != "" && controller != "N/A" {
+				sw.OpenFlowStatus = "active"
+				// Extract IP from tcp:192.168.1.250:6653 format
+				if strings.Contains(controller, ":") {
+					parts := strings.Split(controller, ":")
+					if len(parts) >= 2 {
+						sw.ControllerIP = parts[1]
+					}
+				}
+			} else {
+				sw.OpenFlowStatus = "inactive"
+			}
+		}
+
+		// Get flow count
+		flowCmd := "ovs-ofctl dump-flows br0 2>/dev/null | grep -c 'cookie=' || echo 0"
+		flowOutput, err := c.executeCommand(sw.IPAddress, sw.Port, flowCmd)
+		if err == nil {
+			count, _ := strconv.Atoi(strings.TrimSpace(flowOutput))
+			sw.FlowCount = count
+		}
+
+		// Get port count
+		portCmd := "ovs-ofctl show br0 2>/dev/null | grep -c ' addr:' || echo 0"
+		portOutput, err := c.executeCommand(sw.IPAddress, sw.Port, portCmd)
+		if err == nil {
+			count, _ := strconv.Atoi(strings.TrimSpace(portOutput))
+			sw.PortCount = count
+		}
+
+		// Get OpenFlow version
+		versionCmd := "ovs-ofctl -V 2>/dev/null | head -1 | awk '{print $NF}' || echo 'N/A'"
+		versionOutput, err := c.executeCommand(sw.IPAddress, sw.Port, versionCmd)
+		if err == nil {
+			sw.OpenFlowVersion = strings.TrimSpace(versionOutput)
+		}
+	} else {
+		sw.OpenFlowStatus = "not_installed"
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"context"
 	"embed"
 	"fmt"
@@ -10,13 +11,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
-
+    
 	"github.com/gorilla/mux"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"server-dashboard/internal/config"
@@ -94,8 +96,90 @@ func main() {
 			vms, _ := services.GetAllVMs()
 			return len(vms)
 		},
-		"add": func(a, b int) int {
-			return a + b
+		"getSwitchCount": func() int {
+			switches, _ := services.GetAllSwitches()
+			return len(switches)
+		},
+		"add": func(a, b interface{}) interface{} {
+			// If both are ints, return int to avoid template type mismatches
+			aIsInt, bIsInt := false, false
+			var aInt, bInt int
+			var aFloat, bFloat float64
+
+			switch v := a.(type) {
+			case int:
+				aIsInt = true
+				aInt = v
+				aFloat = float64(v)
+			case float64:
+				aFloat = v
+			}
+			switch v := b.(type) {
+			case int:
+				bIsInt = true
+				bInt = v
+				bFloat = float64(v)
+			case float64:
+				bFloat = v
+			}
+
+			if aIsInt && bIsInt {
+				return aInt + bInt
+			}
+			return aFloat + bFloat
+		},
+		"divideFloat": func(a, b interface{}) float64 {
+			var aVal, bVal float64
+			switch v := a.(type) {
+			case int:
+				aVal = float64(v)
+			case float64:
+				aVal = v
+			}
+			switch v := b.(type) {
+			case int:
+				bVal = float64(v)
+			case float64:
+				bVal = v
+			}
+			if bVal != 0 {
+				return aVal / bVal
+			}
+			return 0
+		},
+		"uiShowQuickSummary": func() bool {
+			return cfg.UI.ShowQuickSummary
+		},
+		"uiShowMonitoringFeatures": func() bool {
+			return cfg.UI.ShowMonitoringFeatures
+		},
+		"uiShowSynthetics": func() bool {
+			return cfg.UI.ShowSynthetics
+		},
+		"uiShowNavigationButtons": func() bool {
+			return cfg.UI.ShowNavigationButtons
+		},
+		"uiEnableAutoRefresh": func() bool {
+			return cfg.UI.EnableAutoRefresh
+		},
+		"uiAutoRefreshSeconds": func() int {
+			if cfg.UI.AutoRefreshSeconds > 0 {
+				return cfg.UI.AutoRefreshSeconds
+			}
+			return 30
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+		"until": func(count int) []int {
+			var result []int
+			for i := 0; i < count; i++ {
+				result = append(result, i)
+			}
+			return result
+		},
+		"join": func(items []string, sep string) string {
+			return strings.Join(items, sep)
 		},
 	}
 
@@ -122,13 +206,30 @@ func main() {
 	// Middleware - add logging and security headers
 	r.Use(loggingMiddleware)
 	r.Use(securityHeadersMiddleware)
+	r.Use(gzipMiddleware)
 
 	// Serve static files from embedded filesystem
 	staticFilesFS, err := fs.Sub(staticFS, "web/static")
 	if err != nil {
 		log.Fatalf("Error creating static files sub-filesystem: %v", err)
 	}
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(staticFilesFS))))
+	staticHandler := http.StripPrefix("/static/", http.FileServer(http.FS(staticFilesFS)))
+	r.PathPrefix("/static/").Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		staticHandler.ServeHTTP(w, req)
+	}))
+
+	// pprof (enabled when not production)
+	if strings.ToLower(cfg.Environment) != "production" {
+		r.PathPrefix("/debug/pprof/").Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			pprof.Handler(strings.TrimPrefix(req.URL.Path, "/debug/pprof/")).ServeHTTP(w, req)
+		}))
+		r.HandleFunc("/debug/pprof/", pprof.Index)
+		r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		r.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		r.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
 
 	// Health check endpoint
 	r.HandleFunc("/health", healthCheckHandler).Methods("GET")
@@ -136,6 +237,20 @@ func main() {
 	// Set up routes
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		handlers.DashboardHandlerWithTemplates(w, r, templates)
+	}).Methods("GET")
+
+	r.HandleFunc("/all-systems", func(w http.ResponseWriter, r *http.Request) {
+		handlers.AllSystemsHandlerWithTemplates(w, r, templates)
+	}).Methods("GET")
+
+	r.HandleFunc("/quick-summary", func(w http.ResponseWriter, r *http.Request) {
+		handlers.QuickSummaryHandlerWithTemplates(cfg, func(tmplName string, data interface{}) ([]byte, error) {
+			var buf strings.Builder
+			if err := templates.ExecuteTemplate(&buf, tmplName, data); err != nil {
+				return nil, err
+			}
+			return []byte(buf.String()), nil
+		})(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/servers", func(w http.ResponseWriter, r *http.Request) {
@@ -152,6 +267,22 @@ func main() {
 
 	r.HandleFunc("/vms/{id}", func(w http.ResponseWriter, r *http.Request) {
 		handlers.VMDetailHandlerWithTemplates(w, r, templates)
+	}).Methods("GET")
+
+	r.HandleFunc("/switches", func(w http.ResponseWriter, r *http.Request) {
+		handlers.SwitchesHandler(templates)(w, r)
+	}).Methods("GET")
+
+	r.HandleFunc("/switches/{id}", func(w http.ResponseWriter, r *http.Request) {
+		handlers.SwitchDetailHandler(templates)(w, r)
+	}).Methods("GET")
+
+	r.HandleFunc("/synthetics", func(w http.ResponseWriter, r *http.Request) {
+		if !cfg.UI.ShowSynthetics {
+			http.NotFound(w, r)
+			return
+		}
+		handlers.SyntheticHandlerWithTemplates(w, r, templates)
 	}).Methods("GET")
 
 	// Monitoring control API endpoints
@@ -214,6 +345,44 @@ func main() {
 
 		log.Printf("Server shut down successfully")
 	}
+}
+
+// gzipMiddleware compresses eligible responses for clients that accept gzip.
+func gzipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Skip compression for upgrade connections (e.g., websockets)
+		if strings.Contains(strings.ToLower(r.Header.Get("Connection")), "upgrade") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+
+		w.Header().Del("Content-Length")
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Add("Vary", "Accept-Encoding")
+
+		grw := &gzipResponseWriter{ResponseWriter: w, Writer: gz}
+		next.ServeHTTP(grw, r)
+	})
+}
+
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	io.Writer
+}
+
+func (w *gzipResponseWriter) Write(b []byte) (int, error) {
+	if w.Header().Get("Content-Type") == "" {
+		w.Header().Set("Content-Type", http.DetectContentType(b))
+	}
+	return w.Writer.Write(b)
 }
 
 // setupLogging configures logging to both file and console with rotation
