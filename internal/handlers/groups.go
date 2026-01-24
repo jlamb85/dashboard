@@ -83,7 +83,7 @@ func GroupsPageHandler(cfg *config.Config, templates *template.Template, configP
 			// Update user groups
 			for i := range cfg.Auth.Users {
 				var updatedGroups []string
-				for _, g := range userGroups(cfg.Auth.Users[i]) {
+				for _, g := range cfg.Auth.Users[i].Groups {
 					if !strings.EqualFold(g, groupName) {
 						updatedGroups = append(updatedGroups, g)
 					}
@@ -93,30 +93,7 @@ func GroupsPageHandler(cfg *config.Config, templates *template.Template, configP
 					updatedGroups = append(updatedGroups, groupName)
 				}
 
-				if len(updatedGroups) == 0 {
-					cfg.Auth.Users[i].Groups = ""
-				} else {
-					cfg.Auth.Users[i].Groups = strings.Join(updatedGroups, ", ")
-				}
-			}
-
-			if err := writeUsersToConfig(cfg, configPath); err != nil {
-				renderGroupError(templates, username, cfg, "Failed to update membership: "+err.Error(), w)
-				return
-			}
-			http.Redirect(w, r, "/account/groups", http.StatusFound)
-			return
-		}
-
-		groupName := strings.TrimSpace(r.FormValue("group_name"))
-		description := strings.TrimSpace(r.FormValue("description"))
-		permsRaw := strings.TrimSpace(r.FormValue("permissions"))
-
-		if action == "delete" {
-			if err := deleteGroup(cfg, configPath, groupName); err != nil {
-				renderGroupError(templates, username, cfg, "Failed to delete group: "+err.Error(), w)
-				return
-			}
+				cfg.Auth.Users[i].Groups = updatedGroups
 			http.Redirect(w, r, "/account/groups", http.StatusFound)
 			return
 		}
@@ -367,10 +344,9 @@ func writeUsersToConfig(cfg *config.Config, configPath string) error {
 
 						if strings.HasPrefix(trimmed, "- username:") || (trimmed != "" && !strings.HasPrefix(line, indentAuth+"    ")) {
 							// Next user or end
-							if targetUser != nil && targetUser.Groups != "" && !hasGroups {
-								groups := strings.Split(targetUser.Groups, ", ")
+							if targetUser != nil && len(targetUser.Groups) > 0 && !hasGroups {
 								var quoted []string
-								for _, g := range groups {
+								for _, g := range targetUser.Groups {
 									quoted = append(quoted, "\""+strings.TrimSpace(g)+"\"")
 								}
 								out = append(out, indentAuth+"    groups: ["+strings.Join(quoted, ", ")+"]")
@@ -380,15 +356,14 @@ func writeUsersToConfig(cfg *config.Config, configPath string) error {
 
 						if strings.HasPrefix(trimmed, "groups:") {
 							hasGroups = true
-							if targetUser != nil && targetUser.Groups != "" {
-								groups := strings.Split(targetUser.Groups, ", ")
+							if targetUser != nil && len(targetUser.Groups) > 0 {
 								var quoted []string
-								for _, g := range groups {
+								for _, g := range targetUser.Groups {
 									quoted = append(quoted, "\""+strings.TrimSpace(g)+"\"")
 								}
 								out = append(out, indentAuth+"    groups: ["+strings.Join(quoted, ", ")+"]")
 							} else {
-								// Skip this line
+								// Skip this line - user has no groups
 							}
 							i++
 							continue
