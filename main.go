@@ -18,12 +18,14 @@ import (
 	"strings"
 	"syscall"
 	"time"
-    
+
 	"github.com/gorilla/mux"
 	"gopkg.in/natefinch/lumberjack.v2"
+
 	"server-dashboard/internal/config"
 	"server-dashboard/internal/handlers"
 	"server-dashboard/internal/services"
+	"server-dashboard/internal/middleware"
 )
 
 //go:embed web/templates
@@ -40,6 +42,8 @@ var (
 )
 
 func main() {
+	configPath := "config/config.yaml"
+
 	// Read version from VERSION file if not set via ldflags
 	if Version == "dev" {
 		if data, err := ioutil.ReadFile("VERSION"); err == nil {
@@ -48,7 +52,7 @@ func main() {
 	}
 
 	// Load configuration
-	cfg, err := config.LoadConfig("config/config.yaml")
+	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
@@ -234,13 +238,36 @@ func main() {
 	// Health check endpoint
 	r.HandleFunc("/health", healthCheckHandler).Methods("GET")
 
+	// Initialize session auth
+	middleware.InitSession(cfg.Auth.SessionSecret)
+
+	// Auth routes
+	r.HandleFunc("/login", handlers.LoginPageHandler(templates)).Methods("GET")
+	r.HandleFunc("/login", handlers.LoginPostHandler(cfg, templates)).Methods("POST")
+	r.HandleFunc("/logout", handlers.LogoutHandler()).Methods("POST", "GET")
+	r.HandleFunc("/account/password", handlers.PasswordChangePageHandler(cfg, templates, configPath)).Methods("GET", "POST")
+	r.HandleFunc("/account/users/new", handlers.UserCreatePageHandler(cfg, templates, configPath)).Methods("GET", "POST")
+	r.HandleFunc("/account/groups", handlers.GroupsPageHandler(cfg, templates, configPath)).Methods("GET", "POST")
+
+	// Enforce auth after public endpoints are set
+	r.Use(middleware.AuthRequired(cfg.Auth.Enabled))
+
 	// Set up routes
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		handlers.DashboardHandlerWithTemplates(w, r, templates)
+		// If not authenticated, middleware will redirect to /login
+    	handlers.DashboardHandlerWithTemplates(w, r, templates)
 	}).Methods("GET")
 
 	r.HandleFunc("/all-systems", func(w http.ResponseWriter, r *http.Request) {
 		handlers.AllSystemsHandlerWithTemplates(w, r, templates)
+	}).Methods("GET")
+
+	r.HandleFunc("/monitoring", func(w http.ResponseWriter, r *http.Request) {
+		handlers.MonitoringPageHandlerWithTemplates(templates)(w, r)
+	}).Methods("GET")
+
+	r.HandleFunc("/synthetics", func(w http.ResponseWriter, r *http.Request) {
+		handlers.SyntheticsPageHandlerWithTemplates(templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/quick-summary", func(w http.ResponseWriter, r *http.Request) {
@@ -440,14 +467,19 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		// Create a response writer wrapper to capture status code
 		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
-		// Log the request
-		log.Printf("Started %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+		// Determine user for audit log
+		user := "anonymous"
+		if u, ok := middleware.GetUsername(r); ok {
+			user = u
+		}
+		// Log the request (audit: who went to what)
+		log.Printf("Started %s %s by %s from %s", r.Method, r.URL.Path, user, r.RemoteAddr)
 
 		next.ServeHTTP(rw, r)
 
 		// Log the response
 		duration := time.Since(start)
-		log.Printf("Completed %s %s with %d in %v", r.Method, r.URL.Path, rw.statusCode, duration)
+		log.Printf("Completed %s %s with %d in %v by %s", r.Method, r.URL.Path, rw.statusCode, duration, user)
 	})
 }
 

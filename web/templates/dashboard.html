@@ -30,6 +30,26 @@
                             <i class="bi bi-moon-stars"></i>
                         </button>
                     </li>
+                    <li class="nav-item ms-2">
+                        <a class="nav-link nav-link-utility" href="/account/password">
+                            <i class="bi bi-key"></i> Change Password
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-utility" href="/account/users/new">
+                            <i class="bi bi-person-plus"></i> Create User
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-utility" href="/account/groups">
+                            <i class="bi bi-people"></i> Manage Groups
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-utility" href="/logout">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -68,6 +88,31 @@
                                 <span class="badge bg-warning ms-auto">{{ getSwitchCount }}</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/synthetics" data-page="synthetics">
+                                <i class="bi bi-activity"></i> Synthetics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/password" data-page="account-password">
+                                <i class="bi bi-key"></i> Change Password
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/users/new" data-page="account-user-new">
+                                <i class="bi bi-person-plus"></i> Create User
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/groups" data-page="account-groups">
+                                <i class="bi bi-people"></i> Manage Groups
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout" data-page="logout">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
                     </ul>
                     <hr>
                     <div class="small text-muted">
@@ -100,7 +145,7 @@
                 <!-- Summary Cards -->
                 <div class="row g-3 mb-4 overview-grid" data-card-grid="overview" data-per-page="8" data-compact-threshold="6">
                     <div class="col-md-3" data-card-item>
-                        <div class="card status-card h-100">
+                        <div class="card status-card h-100" style="cursor: pointer;" onclick="window.location.href='/servers'" title="Click to view all servers">
                             <div class="card-body">
                                 <div class="card-title d-flex justify-content-between align-items-center">
                                     <span>Servers</span>
@@ -136,7 +181,7 @@
                         </div>
                     </div>
                     <div class="col-md-3" data-card-item>
-                        <div class="card status-card h-100">
+                        <div class="card status-card h-100" style="cursor: pointer;" onclick="window.location.href='/vms'" title="Click to view all VMs">
                             <div class="card-body">
                                 <div class="card-title d-flex justify-content-between align-items-center">
                                     <span>Virtual Machines</span>
@@ -172,7 +217,7 @@
                         </div>
                     </div>
                     <div class="col-md-3" data-card-item>
-                        <div class="card status-card h-100">
+                        <div class="card status-card h-100" style="cursor: pointer;" onclick="window.location.href='/switches'" title="Click to view all switches">
                             <div class="card-body">
                                 <div class="card-title d-flex justify-content-between align-items-center">
                                     <span>Switches</span>
@@ -208,7 +253,7 @@
                         </div>
                     </div>
                     <div class="col-md-3" data-card-item>
-                        <div class="card status-card h-100">
+                        <div class="card status-card h-100" style="cursor: pointer;" onclick="window.location.href='/all-systems'" title="Click to view all systems">
                             <div class="card-body">
                                 <div class="card-title d-flex justify-content-between align-items-center">
                                     <span>Overall Status</span>
@@ -248,7 +293,7 @@
                         </div>
                     </div>
                     <div class="col-md-3" data-card-item>
-                        <div class="card status-card h-100">
+                        <div class="card status-card h-100" style="cursor: pointer;" onclick="window.location.href='/monitoring'" title="Click to view monitoring details">
                             <div class="card-body">
                                 <div class="card-title">Monitoring Status</div>
                                 <div class="mt-2">
@@ -264,27 +309,16 @@
                     </div>
                     {{ if uiShowSynthetics }}
                     <div class="col-md-3" data-card-item>
-                        <div class="card status-card h-100">
+                        <div class="card status-card h-100" style="cursor: pointer;" onclick="window.location.href='/synthetics'" title="Click to view synthetics details">
                             <div class="card-body">
-                                <div class="card-title d-flex justify-content-between align-items-center">
-                                    <span>Synthetics</span>
-                                    <i class="bi bi-check-circle text-success"></i>
-                                </div>
-                                <div class="metric-value">
-                                    {{ .syntheticsOK }}/{{ .syntheticsTotal }}
-                                </div>
+                                <div class="card-title">Synthetics Status</div>
                                 <div class="mt-2">
-                                    {{ if gt .syntheticsTotal 0 }}
-                                        <span class="badge bg-success">Pass</span>
-                                        {{ if gt .syntheticsWorstLatency 0 }}
-                                            <span class="badge bg-info text-dark ms-2">Worst {{ .syntheticsWorstLatency }} ms</span>
-                                        {{ end }}
-                                    {{ else }}
-                                        <span class="badge bg-secondary">No checks</span>
-                                    {{ end }}
+                                    <span class="badge" id="dashboard-synthetics-status">
+                                        <i class="bi bi-circle-fill"></i> <span id="dashboard-synthetics-text">Checking...</span>
+                                    </span>
                                 </div>
                                 <small class="text-muted d-block mt-2">
-                                    <i class="bi bi-link-45deg"></i> <a href="/synthetics">View synthetic checks</a>
+                                    <i class="bi bi-activity"></i> <span id="dashboard-synthetics-desc">Synthetic checks</span>
                                 </small>
                             </div>
                         </div>

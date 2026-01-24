@@ -1,0 +1,203 @@
+{{ define "groups.html" }}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Groups - Server Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <header class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <button class="btn btn-sm btn-outline-light" id="theme-toggle" title="Toggle dark mode">
+                            <i class="bi bi-moon-stars"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <a class="nav-link nav-link-utility" href="/account/password">
+                            <i class="bi bi-key"></i> Change Password
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-utility" href="/account/users/new">
+                            <i class="bi bi-person-plus"></i> Create User
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-utility" href="/logout">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid flex-grow-1 py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-4">
+                    <h2 class="h3 fw-bold">
+                        <i class="bi bi-people"></i> Manage Groups
+                    </h2>
+                    <p class="text-muted mb-0">Signed in as {{ .Username }}</p>
+                </div>
+
+                {{ if .Error }}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> {{ .Error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {{ end }}
+
+                <div class="row g-4">
+                    <!-- Current Groups in Use -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary bg-opacity-10">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-diagram-3"></i> Groups in Use
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {{ if .UsedGroups }}
+                                <div class="list-group">
+                                    {{ range $group, $count := .UsedGroups }}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span class="fw-medium">{{ $group }}</span>
+                                        <span class="badge bg-primary rounded-pill">{{ $count }} user{{ if ne $count 1 }}s{{ end }}</span>
+                                    </div>
+                                    {{ end }}
+                                </div>
+                                {{ else }}
+                                <p class="text-muted mb-0">No groups currently assigned to users.</p>
+                                {{ end }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create/Edit Group -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success bg-opacity-10">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-plus-circle"></i> Create/Edit Group
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="/account/groups">
+                                    <div class="mb-3">
+                                        <label for="group_name" class="form-label">Group Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="group_name" name="group_name" required placeholder="admin, operators, viewers">
+                                        <small class="form-text text-muted">Use existing name to update</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">Description</label>
+                                        <input type="text" class="form-control" id="description" name="description" placeholder="Full system administrators">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="permissions" class="form-label">Permissions (comma separated)</label>
+                                        <input type="text" class="form-control" id="permissions" name="permissions" placeholder="view_all, edit_servers, create_users">
+                                        <small class="form-text text-muted">Optional: Define what this group can do</small>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" name="action" value="save" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Save Group
+                                        </button>
+                                        <a href="/" class="btn btn-outline-secondary">Cancel</a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Defined Groups -->
+                {{ if .DefinedGroups }}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-info bg-opacity-10">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-list-ul"></i> Defined Groups
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Description</th>
+                                                <th>Permissions</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{ range .DefinedGroups }}
+                                            <tr>
+                                                <td><strong>{{ .Name }}</strong></td>
+                                                <td>{{ .Description }}</td>
+                                                <td>
+                                                    {{ if .Permissions }}
+                                                        {{ range $i, $p := .Permissions }}{{ if $i }}, {{ end }}<code>{{ $p }}</code>{{ end }}
+                                                    {{ else }}
+                                                        <span class="text-muted">None</span>
+                                                    {{ end }}
+                                                </td>
+                                                <td>
+                                                    <form method="POST" action="/account/groups" class="d-inline" onsubmit="return confirm('Delete group \'{{ .Name }}\'?');">
+                                                        <input type="hidden" name="group_name" value="{{ .Name }}">
+                                                        <button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{ end }}
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-body-secondary border-top">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-muted">
+                    <small>&copy; {{ currentYear }} Server Dashboard</small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        <i class="bi bi-code-square"></i> {{ appVersion }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
+{{ end }}

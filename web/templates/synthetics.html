@@ -30,6 +30,26 @@
                             <i class="bi bi-moon-stars"></i>
                         </button>
                     </li>
+                    <li class="nav-item ms-2">
+                        <a class="nav-link nav-link-utility" href="/account/password">
+                            <i class="bi bi-key"></i> Change Password
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-utility" href="/account/users/new">
+                            <i class="bi bi-person-plus"></i> Create User
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-utility" href="/account/groups">
+                            <i class="bi bi-people"></i> Manage Groups
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-utility" href="/logout">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -75,6 +95,26 @@
                             </a>
                         </li>
                         {{ end }}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/password" data-page="account-password">
+                                <i class="bi bi-key"></i> Change Password
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/users/new" data-page="account-user-new">
+                                <i class="bi bi-person-plus"></i> Create User
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/groups" data-page="account-groups">
+                                <i class="bi bi-people"></i> Manage Groups
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout" data-page="logout">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
                     </ul>
                     <hr>
                     <div class="small text-muted">
@@ -100,8 +140,8 @@
             <main role="main" class="col-lg-10" id="main-content">
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <h2 class="h3 fw-bold mb-0">
-                        <i class="bi bi-check-circle"></i> Synthetic Checks
-                        <span class="badge bg-secondary">{{ len .synthetics }}</span>
+                        <i class="bi bi-activity"></i> Synthetic Checks
+                        <span class="badge bg-secondary">{{ len .Synthetics }}</span>
                     </h2>
                     <a href="/" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-left"></i> Back to Overview
@@ -122,7 +162,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {{ range .synthetics }}
+                            {{ range .Synthetics }}
                             <tr data-tags="{{ join .Tags "," }}">
                                 <td class="fw-bold">{{ .Name }}</td>
                                 <td class="text-uppercase text-muted small">{{ .Type }}</td>
@@ -156,7 +196,7 @@
                     </table>
                 </div>
 
-                {{ if eq (len .synthetics) 0 }}
+                {{ if eq (len .Synthetics) 0 }}
                 <div class="alert alert-info text-center py-5">
                     <i class="bi bi-info-circle display-4"></i>
                     <p class="mt-3 mb-0">No synthetic checks configured. Add synthetic_checks in your config file.</p>

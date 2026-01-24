@@ -10,61 +10,84 @@ import (
 )
 
 type Config struct {
-	ServerAddress      string              `yaml:"server_address"`
-	MonitoringInterval int                 `yaml:"monitoring_interval"`
-	Logging            LoggingConfig       `yaml:"logging"`
-	Auth               AuthConfig          `yaml:"auth"`
-	Servers            []ServerConfig      `yaml:"servers"`
+	ServerAddress      string                 `yaml:"server_address"`
+	MonitoringInterval int                    `yaml:"monitoring_interval"`
+	Logging            LoggingConfig          `yaml:"logging"`
+	Auth               AuthConfig             `yaml:"auth"`
+	Servers            []ServerConfig         `yaml:"servers"`
 	VirtualMachines    []VirtualMachineConfig `yaml:"virtual_machines"`
-	Switches           []SwitchConfig      `yaml:"switches"`
-	Monitoring         MonitoringConfig    `yaml:"monitoring"`
+	Switches           []SwitchConfig         `yaml:"switches"`
+	Monitoring         MonitoringConfig       `yaml:"monitoring"`
 	SyntheticChecks    []SyntheticCheckConfig `yaml:"synthetic_checks"`
-	SSH                SSHConfig           `yaml:"ssh"`
-	TLS                TLSConfig           `yaml:"tls"`
-	UI                 UIConfig            `yaml:"ui"`
-	Environment        string              `yaml:"environment"`
+	SSH                SSHConfig              `yaml:"ssh"`
+	TLS                TLSConfig              `yaml:"tls"`
+	UI                 UIConfig               `yaml:"ui"`
+	Environment        string                 `yaml:"environment"`
 }
 
 type LoggingConfig struct {
-	Directory   string `yaml:"directory"`
-	Level       string `yaml:"level"`
-	MaxSizeMB   int    `yaml:"max_size_mb"`
-	MaxBackups  int    `yaml:"max_backups"`
-	MaxAgeDays  int    `yaml:"max_age_days"`
-	Compress    bool   `yaml:"compress"`
+	Directory  string `yaml:"directory"`
+	Level      string `yaml:"level"`
+	MaxSizeMB  int    `yaml:"max_size_mb"`
+	MaxBackups int    `yaml:"max_backups"`
+	MaxAgeDays int    `yaml:"max_age_days"`
+	Compress   bool   `yaml:"compress"`
 }
 
 type AuthConfig struct {
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	Enabled  bool   `yaml:"enabled"`
+	Username      string           `yaml:"username"`
+	Password      string           `yaml:"password"`
+	Enabled       bool             `yaml:"enabled"`
+	PasswordHash  string           `yaml:"password_hash"`
+	SessionSecret string           `yaml:"session_secret"`
+	Users         []UserCredential `yaml:"users"`
+	Groups        []GroupDefinition `yaml:"groups"` // Group definitions with permissions
+}
+
+// UserCredential represents a single user's credentials. When one or more users
+// are defined here, they take precedence over the top-level username/password
+// fields for authentication.
+type UserCredential struct {
+	Username     string   `yaml:"username"`
+	PasswordHash string   `yaml:"password_hash"`
+	Password     string   `yaml:"password"`
+	Enabled      bool     `yaml:"enabled"`
+	Roles        []string `yaml:"roles"`  // legacy alias kept for backward compatibility
+	Groups       []string `yaml:"groups"` // preferred field for authorization groups
+}
+
+// GroupDefinition represents a permission group that users can belong to
+type GroupDefinition struct {
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description"`
+	Permissions []string `yaml:"permissions"` // List of permission strings
 }
 
 type TLSConfig struct {
-	Enabled bool   `yaml:"enabled"`
+	Enabled  bool   `yaml:"enabled"`
 	CertFile string `yaml:"cert_file"`
 	KeyFile  string `yaml:"key_file"`
 }
 
 type ServerConfig struct {
-	ID        string `yaml:"id"`
-	Name      string `yaml:"name"`
-	IPAddress string `yaml:"ip_address"`
-	Hostname  string `yaml:"hostname"`
-	Port      int    `yaml:"port"`
-	Enabled   bool   `yaml:"enabled"`
+	ID        string   `yaml:"id"`
+	Name      string   `yaml:"name"`
+	IPAddress string   `yaml:"ip_address"`
+	Hostname  string   `yaml:"hostname"`
+	Port      int      `yaml:"port"`
+	Enabled   bool     `yaml:"enabled"`
 	Tags      []string `yaml:"tags"`
 }
 
 type VirtualMachineConfig struct {
-	ID           string `yaml:"id"`
-	Name         string `yaml:"name"`
-	IPAddress    string `yaml:"ip_address"`
-	Hostname     string `yaml:"hostname"`
-	Port         int    `yaml:"port"`
-	Enabled      bool   `yaml:"enabled"`
-	HostServerID string `yaml:"host_server_id"`
-	StreamPorts  []int  `yaml:"stream_ports"` // Optional ports for video/media streaming
+	ID           string   `yaml:"id"`
+	Name         string   `yaml:"name"`
+	IPAddress    string   `yaml:"ip_address"`
+	Hostname     string   `yaml:"hostname"`
+	Port         int      `yaml:"port"`
+	Enabled      bool     `yaml:"enabled"`
+	HostServerID string   `yaml:"host_server_id"`
+	StreamPorts  []int    `yaml:"stream_ports"` // Optional ports for video/media streaming
 	Tags         []string `yaml:"tags"`
 }
 
@@ -78,20 +101,20 @@ type SwitchConfig struct {
 	ControllerIP    string `yaml:"controller_ip"`    // SDN controller IP
 	OpenFlowVersion string `yaml:"openflow_version"` // Expected OpenFlow version
 	// SSH credentials specific to this switch (optional, falls back to global SSH config)
-	SSHUsername     string `yaml:"ssh_username"`      // Switch-specific SSH username
-	SSHPassword     string `yaml:"ssh_password"`      // Switch-specific SSH password
-	SSHKeyPath      string `yaml:"ssh_key_path"`      // Switch-specific SSH private key path
-	Tags            []string `yaml:"tags"`
+	SSHUsername string   `yaml:"ssh_username"` // Switch-specific SSH username
+	SSHPassword string   `yaml:"ssh_password"` // Switch-specific SSH password
+	SSHKeyPath  string   `yaml:"ssh_key_path"` // Switch-specific SSH private key path
+	Tags        []string `yaml:"tags"`
 }
 
 type SyntheticCheckConfig struct {
 	ID              string   `yaml:"id"`
 	Name            string   `yaml:"name"`
-	Type            string   `yaml:"type"`             // http, tcp, dns
-	URL             string   `yaml:"url"`              // for http
-	Host            string   `yaml:"host"`             // for tcp/dns
-	Port            int      `yaml:"port"`             // for tcp
-	ExpectedStatus  int      `yaml:"expected_status"`  // for http
+	Type            string   `yaml:"type"`            // http, tcp, dns
+	URL             string   `yaml:"url"`             // for http
+	Host            string   `yaml:"host"`            // for tcp/dns
+	Port            int      `yaml:"port"`            // for tcp
+	ExpectedStatus  int      `yaml:"expected_status"` // for http
 	IntervalSeconds int      `yaml:"interval_seconds"`
 	TimeoutSeconds  int      `yaml:"timeout_seconds"`
 	Enabled         bool     `yaml:"enabled"`
@@ -99,12 +122,12 @@ type SyntheticCheckConfig struct {
 }
 
 type MonitoringConfig struct {
-	PingTimeoutSeconds  int  `yaml:"ping_timeout_seconds"`
-	DiskThresholdPercent int `yaml:"disk_threshold_percent"`
-	CheckProcesses      bool `yaml:"check_processes"`
-	CheckDiskSpace      bool `yaml:"check_disk_space"`
-	CheckUptime         bool `yaml:"check_uptime"`
-	UseMockData         bool `yaml:"use_mock_data"`
+	PingTimeoutSeconds   int  `yaml:"ping_timeout_seconds"`
+	DiskThresholdPercent int  `yaml:"disk_threshold_percent"`
+	CheckProcesses       bool `yaml:"check_processes"`
+	CheckDiskSpace       bool `yaml:"check_disk_space"`
+	CheckUptime          bool `yaml:"check_uptime"`
+	UseMockData          bool `yaml:"use_mock_data"`
 }
 
 type UIConfig struct {
@@ -182,6 +205,9 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if pass := os.Getenv("AUTH_PASSWORD"); pass != "" {
 		cfg.Auth.Password = pass
+	}
+	if passHash := os.Getenv("AUTH_PASSWORD_HASH"); passHash != "" {
+		cfg.Auth.PasswordHash = passHash
 	}
 	if authEnabled := os.Getenv("AUTH_ENABLED"); authEnabled != "" {
 		cfg.Auth.Enabled = strings.ToLower(authEnabled) == "true"

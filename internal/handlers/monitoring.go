@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http"
 
+	"server-dashboard/internal/models"
 	"server-dashboard/internal/services"
 )
 
@@ -112,4 +114,49 @@ func RestartMonitoring(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// MonitoringPageData represents data for the monitoring page template
+type MonitoringPageData struct {
+	Servers                   []models.Server
+	VMs                       []models.VM
+	Switches                  []models.Switch
+	UIEnableAutoRefresh       bool
+	UIAutoRefreshSeconds      int
+	UIShowSynthetics          bool
+	UIShowMonitoringFeatures  bool
+	UIShowNavigationButtons   bool
+	UIShowQuickSummary        bool
+	CurrentYear               int
+	AppVersion                string
+}
+
+// MonitoringPageHandlerWithTemplates returns a handler for the monitoring page
+func MonitoringPageHandlerWithTemplates(templates *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get all servers, VMs, and switches
+		servers, _ := services.GetAllServers()
+		vms, _ := services.GetAllVMs()
+		switches, _ := services.GetAllSwitches()
+
+		// Prepare data for template
+		data := MonitoringPageData{
+			Servers:                  servers,
+			VMs:                      vms,
+			Switches:                 switches,
+			UIEnableAutoRefresh:      true,
+			UIAutoRefreshSeconds:     30,
+			UIShowSynthetics:         true,
+			UIShowMonitoringFeatures: true,
+			UIShowNavigationButtons:  true,
+			UIShowQuickSummary:       true,
+			CurrentYear:              2026,
+			AppVersion:               "v1.0.1-dev",
+		}
+
+		if err := templates.ExecuteTemplate(w, "monitoring.html", data); err != nil {
+			http.Error(w, "Failed to render template: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 }

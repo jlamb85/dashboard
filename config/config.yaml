@@ -16,7 +16,27 @@ logging:
 auth:
   enabled: true  # Set to false to disable auth
   username: "${AUTH_USERNAME:admin}"  # Default to 'admin', override with env var
-  password: "${AUTH_PASSWORD:change_me_in_production}"  # MUST change in production
+  # One of the following should be set:
+  # - Prefer using a bcrypt hash in production (generate with tools/hashpass)
+  password_hash: "${AUTH_PASSWORD_HASH:}"  # e.g., $2a$12$... (bcrypt). Can also be set via AUTH_PASSWORD_HASH
+  # - Fallback plaintext (NOT recommended for production). Can also be set via AUTH_PASSWORD
+  password: "${AUTH_PASSWORD:change_me_in_production}"
+  # Session cookie signing secret (set a long random string in production)
+  session_secret: "${AUTH_SESSION_SECRET:dev-session-secret-change-me}"
+
+  # Multi-user mode. If one or more users are defined here, this list
+  # will be used for authentication instead of the single username/password above.
+  users:
+    - username: "admin"
+      # Using bcrypt hash for admin
+      password_hash: "$2a$12$9iULtxs3WdvaG7kOPQl0WuA/oM0bqNgNiDqRZ83PCQoVsj62hzJji"
+      enabled: true
+      roles: ["admin"]
+    - username: "viewer"
+      # For development convenience only. Replace with password_hash for production.
+      password: "changeme"
+      enabled: true
+      roles: ["read"]
 
 # TLS/HTTPS Configuration - override with TLS_ENABLED, TLS_CERT_FILE, TLS_KEY_FILE env vars
 tls:

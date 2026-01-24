@@ -57,6 +57,17 @@ body {
     margin-right: 0.5rem;
 }
 
+/* Utility nav links in the header that should remain visible in light/dark themes */
+.nav-link-utility {
+    color: var(--bs-navbar-color, #f8f9fa) !important;
+    font-weight: 500;
+}
+
+.nav-link-utility:hover,
+.nav-link-utility:focus {
+    color: var(--bs-navbar-hover-color, #e2e6ea) !important;
+}
+
 /* ============================================
    Sidebar Navigation
    ============================================ */
