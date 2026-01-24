@@ -139,6 +139,7 @@ func GroupsPageHandler(cfg *config.Config, templates *template.Template, configP
 
 		http.Redirect(w, r, "/account/groups", http.StatusFound)
 	}
+}
 
 func renderGroupError(t *template.Template, currentUser string, cfg *config.Config, msg string, w http.ResponseWriter) {
 	usedGroups := make(map[string]int)
