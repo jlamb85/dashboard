@@ -35,22 +35,79 @@ func GroupsPageHandler(cfg *config.Config, templates *template.Template, configP
 			// Get defined groups from config
 			definedGroups := cfg.Auth.Groups
 
+			// Build group members map
+			groupMembers := make(map[string][]string)
+			for _, g := range definedGroups {
+				for _, u := range cfg.Auth.Users {
+					if u.Enabled && userInGroup(u, g.Name) {
+						groupMembers[g.Name] = append(groupMembers[g.Name], u.Username)
+					}
+				}
+			}
+
 			data := map[string]interface{}{
 				"Username":      username,
 				"UsedGroups":    usedGroups,
 				"DefinedGroups": definedGroups,
+				"GroupMembers":  groupMembers,
+				"AllUsers":      cfg.Auth.Users,
 			}
 			templates.ExecuteTemplate(w, "groups.html", data)
 			return
 		}
 
-		// Handle POST - create/update group
+		// Handle POST - create/update group or manage membership
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
 		action := r.FormValue("action")
+
+		// Handle membership updates
+		if action == "update_members" {
+			groupName := strings.TrimSpace(r.FormValue("group_name"))
+			if groupName == "" {
+				renderGroupError(templates, username, cfg, "Group name is required", w)
+				return
+			}
+
+			// Get selected members
+			selectedMembers := make(map[string]bool)
+			for _, u := range cfg.Auth.Users {
+				if r.FormValue("member_"+u.Username) == "on" {
+					selectedMembers[u.Username] = true
+				}
+			}
+
+			// Update user groups
+			for i := range cfg.Auth.Users {
+				var updatedGroups []string
+				for _, g := range userGroups(cfg.Auth.Users[i]) {
+					if !strings.EqualFold(g, groupName) {
+						updatedGroups = append(updatedGroups, g)
+					}
+				}
+
+				if selectedMembers[cfg.Auth.Users[i].Username] {
+					updatedGroups = append(updatedGroups, groupName)
+				}
+
+				if len(updatedGroups) == 0 {
+					cfg.Auth.Users[i].Groups = ""
+				} else {
+					cfg.Auth.Users[i].Groups = strings.Join(updatedGroups, ", ")
+				}
+			}
+
+			if err := writeUsersToConfig(cfg, configPath); err != nil {
+				renderGroupError(templates, username, cfg, "Failed to update membership: "+err.Error(), w)
+				return
+			}
+			http.Redirect(w, r, "/account/groups", http.StatusFound)
+			return
+		}
+
 		groupName := strings.TrimSpace(r.FormValue("group_name"))
 		description := strings.TrimSpace(r.FormValue("description"))
 		permsRaw := strings.TrimSpace(r.FormValue("permissions"))
@@ -96,11 +153,22 @@ func renderGroupError(t *template.Template, currentUser string, cfg *config.Conf
 		}
 	}
 
+	groupMembers := make(map[string][]string)
+	for _, g := range cfg.Auth.Groups {
+		for _, u := range cfg.Auth.Users {
+			if u.Enabled && userInGroup(u, g.Name) {
+				groupMembers[g.Name] = append(groupMembers[g.Name], u.Username)
+			}
+		}
+	}
+
 	t.ExecuteTemplate(w, "groups.html", map[string]interface{}{
 		"Username":      currentUser,
 		"Error":         msg,
 		"UsedGroups":    usedGroups,
 		"DefinedGroups": cfg.Auth.Groups,
+		"GroupMembers":  groupMembers,
+		"AllUsers":      cfg.Auth.Users,
 	})
 }
 
@@ -220,4 +288,127 @@ func formatGroupsBlock(groups []config.GroupDefinition, indent string) []string 
 		}
 	}
 	return lines
+}
+
+// userInGroup checks if a user belongs to a specific group
+func userInGroup(u config.UserCredential, groupName string) bool {
+	for _, g := range userGroups(u) {
+		if strings.EqualFold(g, groupName) {
+			return true
+		}
+	}
+	return false
+}
+
+// writeUsersToConfig updates user group membership in the config file
+func writeUsersToConfig(cfg *config.Config, configPath string) error {
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+
+	var out []string
+	inAuth := false
+	indentAuth := ""
+	i := 0
+
+	for i < len(lines) {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmed, "auth:") {
+			inAuth = true
+			indentAuth = line[:strings.Index(line, "a")]
+			out = append(out, line)
+			i++
+			continue
+		}
+
+		if inAuth && trimmed != "" && !strings.HasPrefix(line, " ") {
+			inAuth = false
+		}
+
+		if inAuth && strings.HasPrefix(trimmed, "users:") {
+			out = append(out, line)
+			i++
+
+			// Process users section
+			for i < len(lines) {
+				line := lines[i]
+				trimmed := strings.TrimSpace(line)
+
+				if trimmed == "" || (!strings.HasPrefix(trimmed, "- username:") && !strings.HasPrefix(line, indentAuth+"  ")) {
+					// End of users section
+					break
+				}
+
+				if strings.HasPrefix(trimmed, "- username:") {
+					usernamePart := strings.TrimPrefix(trimmed, "- username:")
+					usernameVal := strings.Trim(strings.TrimSpace(usernamePart), "\"'")
+
+					out = append(out, line)
+					i++
+
+					// Find this user in config
+					var targetUser *config.UserCredential
+					for j := range cfg.Auth.Users {
+						if cfg.Auth.Users[j].Username == usernameVal {
+							targetUser = &cfg.Auth.Users[j]
+							break
+						}
+					}
+
+					// Copy user properties
+					hasGroups := false
+					for i < len(lines) {
+						line := lines[i]
+						trimmed := strings.TrimSpace(line)
+
+						if strings.HasPrefix(trimmed, "- username:") || (trimmed != "" && !strings.HasPrefix(line, indentAuth+"    ")) {
+							// Next user or end
+							if targetUser != nil && targetUser.Groups != "" && !hasGroups {
+								groups := strings.Split(targetUser.Groups, ", ")
+								var quoted []string
+								for _, g := range groups {
+									quoted = append(quoted, "\""+strings.TrimSpace(g)+"\"")
+								}
+								out = append(out, indentAuth+"    groups: ["+strings.Join(quoted, ", ")+"]")
+							}
+							break
+						}
+
+						if strings.HasPrefix(trimmed, "groups:") {
+							hasGroups = true
+							if targetUser != nil && targetUser.Groups != "" {
+								groups := strings.Split(targetUser.Groups, ", ")
+								var quoted []string
+								for _, g := range groups {
+									quoted = append(quoted, "\""+strings.TrimSpace(g)+"\"")
+								}
+								out = append(out, indentAuth+"    groups: ["+strings.Join(quoted, ", ")+"]")
+							} else {
+								// Skip this line
+							}
+							i++
+							continue
+						}
+
+						out = append(out, line)
+						i++
+					}
+					continue
+				}
+
+				out = append(out, line)
+				i++
+			}
+			continue
+		}
+
+		out = append(out, line)
+		i++
+	}
+
+	return os.WriteFile(configPath, []byte(strings.Join(out, "\n")), 0644)
 }

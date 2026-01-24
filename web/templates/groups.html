@@ -142,6 +142,7 @@
                                                 <th>Name</th>
                                                 <th>Description</th>
                                                 <th>Permissions</th>
+                                                <th>Members</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -158,6 +159,16 @@
                                                     {{ end }}
                                                 </td>
                                                 <td>
+                                                    {{ if index $.GroupMembers .Name }}
+                                                        <span class="badge bg-primary">{{ len (index $.GroupMembers .Name) }} member{{ if ne (len (index $.GroupMembers .Name)) 1 }}s{{ end }}</span>
+                                                    {{ else }}
+                                                        <span class="text-muted">None</span>
+                                                    {{ end }}
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#memberModal" onclick="showMemberModal('{{ .Name }}')">
+                                                        <i class="bi bi-people"></i> Manage
+                                                    </button>
                                                     <form method="POST" action="/account/groups" class="d-inline" onsubmit="return confirm('Delete group \'{{ .Name }}\'?');">
                                                         <input type="hidden" name="group_name" value="{{ .Name }}">
                                                         <button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger">
@@ -175,6 +186,34 @@
                     </div>
                 </div>
                 {{ end }}
+
+                <!-- Membership Management Modal -->
+                <div class="modal fade" id="memberModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Manage Group Membership</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="POST" action="/account/groups" id="memberForm">
+                                <input type="hidden" name="action" value="update_members">
+                                <input type="hidden" name="group_name" id="memberGroupName">
+                                <div class="modal-body">
+                                    <p class="text-muted mb-3">Select which users should be members of this group:</p>
+                                    <div id="membersList" class="list-group">
+                                        <!-- Populated by JavaScript -->
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Save Members
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -198,6 +237,50 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/dashboard.js"></script>
+    <script>
+        // Group membership data from server
+        const groupData = {
+            {{ range .DefinedGroups }}
+            '{{ .Name }}': [
+                {{ range index $.GroupMembers .Name }}'{{ . }}',{{ end }}
+            ],
+            {{ end }}
+        };
+
+        const allUsers = [
+            {{ range .AllUsers }}
+            { username: '{{ .Username }}', enabled: {{ .Enabled }} },
+            {{ end }}
+        ];
+
+        function showMemberModal(groupName) {
+            document.getElementById('memberGroupName').value = groupName;
+            const membersList = document.getElementById('membersList');
+            membersList.innerHTML = '';
+
+            const currentMembers = groupData[groupName] || [];
+
+            allUsers.forEach(user => {
+                if (!user.enabled) return; // Skip disabled users
+
+                const isChecked = currentMembers.includes(user.username);
+                const div = document.createElement('div');
+                div.className = 'list-group-item';
+                div.innerHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               id="member_${user.username}" 
+                               name="member_${user.username}" 
+                               ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label" for="member_${user.username}">
+                            ${user.username}
+                        </label>
+                    </div>
+                `;
+                membersList.appendChild(div);
+            });
+        }
+    </script>
 </body>
 </html>
 {{ end }}
