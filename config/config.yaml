@@ -32,6 +32,7 @@ auth:
       password_hash: "$2a$12$9iULtxs3WdvaG7kOPQl0WuA/oM0bqNgNiDqRZ83PCQoVsj62hzJji"
       enabled: true
       roles: ["admin"]
+    groups: ["admin"]
     - username: "viewer"
       # For development convenience only. Replace with password_hash for production.
       password: "changeme"
