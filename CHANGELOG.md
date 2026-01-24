@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Users can belong to multiple groups (comma-separated)
   - Admin group requirement for creating users and managing groups
   - Manage Groups UI at `/account/groups` for defining and editing groups
+  - **View and edit group membership**: Modal interface to manage which users belong to each group
+  - **Member count display**: Shows how many users are in each group
   - Backward compatibility with legacy `roles` field
   
 - **Session Middleware**: Automatic session validation and authentication enforcement
