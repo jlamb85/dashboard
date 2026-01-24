@@ -47,10 +47,25 @@ body {
     border-bottom: 3px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Force navbar to use dark variant colors regardless of theme */
+.navbar.navbar-dark {
+    --bs-navbar-color: rgba(255, 255, 255, 0.9);
+    --bs-navbar-hover-color: rgba(255, 255, 255, 1);
+    --bs-navbar-active-color: rgba(255, 255, 255, 1);
+    --bs-navbar-brand-color: rgba(255, 255, 255, 0.95);
+    --bs-navbar-brand-hover-color: rgba(255, 255, 255, 1);
+}
+
 .navbar-brand {
     font-size: 1.3rem;
     letter-spacing: 0.5px;
     font-weight: 600;
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.navbar-brand:hover,
+.navbar-brand:focus {
+    color: rgba(255, 255, 255, 1) !important;
 }
 
 .navbar-brand i {
@@ -59,14 +74,25 @@ body {
 
 /* Utility nav links in the header that should remain visible in light/dark themes */
 .nav-link-utility {
-    color: rgba(255, 255, 255, 0.95) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
     font-weight: 500;
+    opacity: 1 !important;
 }
 
 .nav-link-utility:hover,
 .nav-link-utility:focus {
     color: rgba(255, 255, 255, 1) !important;
     text-decoration: underline;
+    opacity: 1 !important;
+}
+
+/* Navbar toggler for mobile */
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
 /* ============================================
