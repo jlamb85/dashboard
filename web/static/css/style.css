@@ -75,23 +75,39 @@ body {
 }
 
 /* Utility nav links in the header - force white text in all themes */
-.nav-link-utility {
+.navbar .nav-link.nav-link-utility {
     color: #ffffff !important;
     font-weight: 500;
     opacity: 0.9 !important;
 }
 
-.nav-link-utility:hover,
-.nav-link-utility:focus,
-.nav-link-utility:active {
+.navbar .nav-link.nav-link-utility:hover,
+.navbar .nav-link.nav-link-utility:focus,
+.navbar .nav-link.nav-link-utility:active {
     color: #ffffff !important;
     opacity: 1 !important;
     text-decoration: underline;
 }
 
-/* Override Bootstrap's dark theme variable that might affect navbar links */
-[data-bs-theme="dark"] .navbar-dark .nav-link-utility,
-[data-bs-theme="dark"] .navbar .nav-link-utility {
+/* Ensure white text in light theme */
+[data-bs-theme="light"] .navbar .nav-link.nav-link-utility {
+    color: #ffffff !important;
+}
+
+[data-bs-theme="light"] .navbar .nav-link.nav-link-utility:hover,
+[data-bs-theme="light"] .navbar .nav-link.nav-link-utility:focus,
+[data-bs-theme="light"] .navbar .nav-link.nav-link-utility:active {
+    color: #ffffff !important;
+}
+
+/* Ensure white text in dark theme */
+[data-bs-theme="dark"] .navbar .nav-link.nav-link-utility,
+[data-bs-theme="dark"] .navbar-dark .nav-link.nav-link-utility {
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .navbar .nav-link.nav-link-utility:hover,
+[data-bs-theme="dark"] .navbar-dark .nav-link.nav-link-utility:hover {
     color: #ffffff !important;
 }
 
