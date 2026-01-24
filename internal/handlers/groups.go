@@ -94,6 +94,25 @@ func GroupsPageHandler(cfg *config.Config, templates *template.Template, configP
 				}
 
 				cfg.Auth.Users[i].Groups = updatedGroups
+			}
+
+			if err := writeUsersToConfig(cfg, configPath); err != nil {
+				renderGroupError(templates, username, cfg, "Failed to update membership: "+err.Error(), w)
+				return
+			}
+			http.Redirect(w, r, "/account/groups", http.StatusFound)
+			return
+		}
+
+		groupName := strings.TrimSpace(r.FormValue("group_name"))
+		description := strings.TrimSpace(r.FormValue("description"))
+		permsRaw := strings.TrimSpace(r.FormValue("permissions"))
+
+		if action == "delete" {
+			if err := deleteGroup(cfg, configPath, groupName); err != nil {
+				renderGroupError(templates, username, cfg, "Failed to delete group: "+err.Error(), w)
+				return
+			}
 			http.Redirect(w, r, "/account/groups", http.StatusFound)
 			return
 		}
@@ -120,7 +139,6 @@ func GroupsPageHandler(cfg *config.Config, templates *template.Template, configP
 
 		http.Redirect(w, r, "/account/groups", http.StatusFound)
 	}
-}
 
 func renderGroupError(t *template.Template, currentUser string, cfg *config.Config, msg string, w http.ResponseWriter) {
 	usedGroups := make(map[string]int)
