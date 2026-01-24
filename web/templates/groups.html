@@ -8,8 +8,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>.form-label{font-weight:500}</style>
+    <script defer src="/static/js/dashboard.js"></script>
+    <script>document.addEventListener('DOMContentLoaded',()=>{if(window.ThemeManager){ThemeManager.init()}if(window.SidebarManager){SidebarManager.init()}})</script>
 </head>
 <body class="d-flex flex-column min-vh-100">
+    <!-- Header/Navbar -->
     <header class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="/">
@@ -20,6 +24,11 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    <li class="nav-item me-2">
+                        <button class="btn btn-sm btn-outline-light d-none d-lg-block" id="sidebar-toggle" title="Toggle sidebar">
+                            <i class="bi bi-layout-sidebar-inset"></i>
+                        </button>
+                    </li>
                     <li class="nav-item">
                         <button class="btn btn-sm btn-outline-light" id="theme-toggle" title="Toggle dark mode">
                             <i class="bi bi-moon-stars"></i>
@@ -45,9 +54,90 @@
         </div>
     </header>
 
+    <!-- Main Container with Sidebar -->
     <div class="container-fluid flex-grow-1 py-4">
-        <div class="row">
-            <div class="col-12">
+        <div class="row g-3">
+            <!-- Sidebar Navigation -->
+            <nav class="col-lg-2 d-none d-lg-block" id="sidebar-nav">
+                <div class="sidebar">
+                    <ul class="nav flex-column gap-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/" data-page="dashboard">
+                                <i class="bi bi-house-door"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/quick-summary" data-page="quick-summary">
+                                <i class="bi bi-table"></i> Quick Summary
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/servers" data-page="servers">
+                                <i class="bi bi-server"></i> Servers
+                                <span class="badge bg-primary ms-auto">{{ getServerCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/vms" data-page="vms">
+                                <i class="bi bi-cpu"></i> Virtual Machines
+                                <span class="badge bg-info ms-auto">{{ getVMCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/switches" data-page="switches">
+                                <i class="bi bi-hdd-rack"></i> Switches
+                                <span class="badge bg-warning ms-auto">{{ getSwitchCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/synthetics" data-page="synthetics">
+                                <i class="bi bi-activity"></i> Synthetics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/password" data-page="account-password">
+                                <i class="bi bi-key"></i> Change Password
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/users/new" data-page="account-user-new">
+                                <i class="bi bi-person-plus"></i> Create User
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/account/groups" data-page="account-groups">
+                                <i class="bi bi-people"></i> Manage Groups
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout" data-page="logout">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="small text-muted">
+                        <p class="mb-2"><strong>Monitoring Status</strong></p>
+                        <div class="d-flex flex-column gap-2" id="monitoring-controls">
+                            <span class="badge" id="monitoring-status">Checking...</span>
+                            <div class="btn-group-vertical btn-group-sm">
+                                <button class="btn btn-outline-success" id="start-monitoring" title="Start monitoring">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                <button class="btn btn-outline-danger" id="stop-monitoring" title="Stop monitoring">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                                <button class="btn btn-outline-warning" id="restart-monitoring" title="Restart monitoring">
+                                    <i class="bi bi-arrow-clockwise"></i> Restart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main role="main" class="col-lg-10" id="main-content">
                 <div class="mb-4">
                     <h2 class="h3 fw-bold">
                         <i class="bi bi-people"></i> Manage Groups
@@ -262,6 +352,9 @@
 
             </div>
         </div>
+        </div>
+        </main>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -280,7 +373,7 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/dashboard.js"></script>
     <script>
         // Group membership data from server
@@ -294,7 +387,7 @@
 
         const allUsers = [
             {{ range .AllUsers }}
-            { username: '{{ .Username }}', enabled: {{ .Enabled }} },
+            { username: '{{ .Username }}', enabled: {{ .Enabled }}, groups: [{{ range .Groups }}'{{ . }}',{{ end }}] },
             {{ end }}
         ];
 
@@ -308,7 +401,7 @@
             allUsers.forEach(user => {
                 if (!user.enabled) return; // Skip disabled users
 
-                const isChecked = currentMembers.includes(user.username);
+                const isChecked = currentMembers.includes(user.username) || (user.groups && user.groups.includes(groupName));
                 const div = document.createElement('div');
                 div.className = 'list-group-item';
                 div.innerHTML = `

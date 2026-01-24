@@ -67,6 +67,39 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/quick-summary" data-page="quick-summary">
+                                <i class="bi bi-table"></i> Quick Summary
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/servers" data-page="servers">
+                                <i class="bi bi-server"></i> Servers
+                                <span class="badge bg-primary ms-auto">{{ getServerCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/vms" data-page="vms">
+                                <i class="bi bi-cpu"></i> Virtual Machines
+                                <span class="badge bg-info ms-auto">{{ getVMCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/switches" data-page="switches">
+                                <i class="bi bi-hdd-rack"></i> Switches
+                                <span class="badge bg-warning ms-auto">{{ getSwitchCount }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/synthetics" data-page="synthetics">
+                                <i class="bi bi-activity"></i> Synthetics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/account/password" data-page="account-password">
+                                <i class="bi bi-key"></i> Change Password
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link active" href="/account/users/new" data-page="account-user-new">
                                 <i class="bi bi-person-plus"></i> Create User
                             </a>
@@ -76,12 +109,28 @@
                                 <i class="bi bi-people"></i> Manage Groups
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout" data-page="logout">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
                     </ul>
                     <hr>
                     <div class="small text-muted">
-                        <p>Account</p>
-                        <div class="d-flex gap-2">
-                            <span class="badge bg-success">Signed in: {{ .Username }}</span>
+                        <p class="mb-2"><strong>Monitoring Status</strong></p>
+                        <div class="d-flex flex-column gap-2" id="monitoring-controls">
+                            <span class="badge" id="monitoring-status">Checking...</span>
+                            <div class="btn-group-vertical btn-group-sm">
+                                <button class="btn btn-outline-success" id="start-monitoring" title="Start monitoring">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                <button class="btn btn-outline-danger" id="stop-monitoring" title="Stop monitoring">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                                <button class="btn btn-outline-warning" id="restart-monitoring" title="Restart monitoring">
+                                    <i class="bi bi-arrow-clockwise"></i> Restart
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
