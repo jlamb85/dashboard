@@ -48,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Users can have both `groups` and legacy `roles` fields
   
 - **User Management**: All password handling now uses bcrypt
+
+- **UI/Navbar Styling**: Improved navbar utility link visibility
+  - Fixed CSS syntax error in navbar dark theme selectors
+  - Strengthened CSS specificity for `.nav-link-utility` class
+  - Ensured white text color (#ffffff) for navbar utility links in both light and dark themes
+  - Utility links (Change Password, Create User, Manage Groups, Logout) now display correctly on purple gradient navbar
   - Plaintext passwords automatically removed when hash is set
   - Config persistence with in-memory updates
   - User creation appends to config file with proper YAML formatting
