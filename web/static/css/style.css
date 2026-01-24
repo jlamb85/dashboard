@@ -59,13 +59,14 @@ body {
 
 /* Utility nav links in the header that should remain visible in light/dark themes */
 .nav-link-utility {
-    color: var(--bs-navbar-color, #f8f9fa) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
     font-weight: 500;
 }
 
 .nav-link-utility:hover,
 .nav-link-utility:focus {
-    color: var(--bs-navbar-hover-color, #e2e6ea) !important;
+    color: rgba(255, 255, 255, 1) !important;
+    text-decoration: underline;
 }
 
 /* ============================================
