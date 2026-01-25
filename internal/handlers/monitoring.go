@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"net/http"
 
+	"server-dashboard/internal/config"
+	"server-dashboard/internal/middleware"
 	"server-dashboard/internal/models"
 	"server-dashboard/internal/services"
 )
@@ -118,22 +120,26 @@ func RestartMonitoring(w http.ResponseWriter, r *http.Request) {
 
 // MonitoringPageData represents data for the monitoring page template
 type MonitoringPageData struct {
-	Servers                   []models.Server
-	VMs                       []models.VM
-	Switches                  []models.Switch
-	UIEnableAutoRefresh       bool
-	UIAutoRefreshSeconds      int
-	UIShowSynthetics          bool
-	UIShowMonitoringFeatures  bool
-	UIShowNavigationButtons   bool
-	UIShowQuickSummary        bool
-	CurrentYear               int
-	AppVersion                string
+	Servers                  []models.Server
+	VMs                      []models.VM
+	Switches                 []models.Switch
+	UIEnableAutoRefresh      bool
+	UIAutoRefreshSeconds     int
+	UIShowSynthetics         bool
+	UIShowMonitoringFeatures bool
+	UIShowNavigationButtons  bool
+	UIShowQuickSummary       bool
+	CurrentYear              int
+	AppVersion               string
+	IsAdmin                  bool
+	Username                 string
 }
 
 // MonitoringPageHandlerWithTemplates returns a handler for the monitoring page
-func MonitoringPageHandlerWithTemplates(templates *template.Template) http.HandlerFunc {
+func MonitoringPageHandlerWithTemplates(cfg *config.Config, templates *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		username, _ := middleware.GetUsername(r)
+
 		// Get all servers, VMs, and switches
 		servers, _ := services.GetAllServers()
 		vms, _ := services.GetAllVMs()
@@ -152,6 +158,8 @@ func MonitoringPageHandlerWithTemplates(templates *template.Template) http.Handl
 			UIShowQuickSummary:       true,
 			CurrentYear:              2026,
 			AppVersion:               "v1.0.1-dev",
+			IsAdmin:                  isAdminUser(cfg, username),
+			Username:                 username,
 		}
 
 		if err := templates.ExecuteTemplate(w, "monitoring.html", data); err != nil {

@@ -111,6 +111,79 @@ body {
     color: #ffffff !important;
 }
 
+/* User dropdown in navbar - force white text and proper hover */
+.navbar .dropdown-toggle.nav-link-utility,
+.navbar-dark .dropdown-toggle.nav-link-utility,
+.navbar .nav-link.dropdown-toggle {
+    color: #ffffff !important;
+    opacity: 0.9 !important;
+}
+
+.navbar .dropdown-toggle.nav-link-utility:hover,
+.navbar .dropdown-toggle.nav-link-utility:focus,
+.navbar .dropdown-toggle.nav-link-utility.show,
+.navbar-dark .dropdown-toggle.nav-link-utility:hover,
+.navbar-dark .dropdown-toggle.nav-link-utility:focus,
+.navbar .nav-link.dropdown-toggle:hover,
+.navbar .nav-link.dropdown-toggle:focus {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    text-decoration: none !important;
+}
+
+/* Override Bootstrap dropdown link default hover colors */
+.navbar-nav .dropdown-toggle::after {
+    color: #ffffff !important;
+}
+
+/* Dark theme overrides for dropdown */
+[data-bs-theme="dark"] .navbar .dropdown-toggle.nav-link-utility,
+[data-bs-theme="dark"] .navbar .nav-link.dropdown-toggle {
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .navbar .dropdown-toggle.nav-link-utility:hover,
+[data-bs-theme="dark"] .navbar .dropdown-toggle.nav-link-utility:focus,
+[data-bs-theme="dark"] .navbar .nav-link.dropdown-toggle:hover,
+[data-bs-theme="dark"] .navbar .nav-link.dropdown-toggle:focus {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure dropdown menu has proper contrast */
+.navbar .dropdown-menu {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-bs-theme="dark"] .navbar .dropdown-menu {
+    background-color: #2d2d44;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar .dropdown-item {
+    padding: 0.5rem 1rem;
+    color: #212529;
+}
+
+.navbar .dropdown-item:hover,
+.navbar .dropdown-item:focus {
+    background-color: #667eea;
+    color: #ffffff;
+}
+
+[data-bs-theme="dark"] .navbar .dropdown-item {
+    color: #e0e0e0;
+}
+
+[data-bs-theme="dark"] .navbar .dropdown-item:hover,
+[data-bs-theme="dark"] .navbar .dropdown-item:focus {
+    background-color: #667eea;
+    color: #ffffff;
+}
+
 /* Navbar toggler for mobile */
 .navbar-toggler {
     border-color: rgba(255, 255, 255, 0.5);

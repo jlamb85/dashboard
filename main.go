@@ -24,8 +24,8 @@ import (
 
 	"server-dashboard/internal/config"
 	"server-dashboard/internal/handlers"
-	"server-dashboard/internal/services"
 	"server-dashboard/internal/middleware"
+	"server-dashboard/internal/services"
 )
 
 //go:embed web/templates
@@ -77,6 +77,7 @@ func main() {
 
 	// Initialize service cache from config
 	services.InitializeCache(cfg)
+	services.InitSynthetic(cfg)
 
 	// Create function map for templates
 	funcMap := template.FuncMap{
@@ -255,20 +256,22 @@ func main() {
 	// Set up routes
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// If not authenticated, middleware will redirect to /login
-    	handlers.DashboardHandlerWithTemplates(w, r, templates)
+		handlers.DashboardHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/all-systems", func(w http.ResponseWriter, r *http.Request) {
-		handlers.AllSystemsHandlerWithTemplates(w, r, templates)
+		handlers.AllSystemsHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/monitoring", func(w http.ResponseWriter, r *http.Request) {
-		handlers.MonitoringPageHandlerWithTemplates(templates)(w, r)
+		handlers.MonitoringPageHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/synthetics", func(w http.ResponseWriter, r *http.Request) {
-		handlers.SyntheticsPageHandlerWithTemplates(templates)(w, r)
+		handlers.SyntheticsPageHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
+
+	r.HandleFunc("/synthetics/{id}", handlers.SyntheticDetailHandler(cfg, templates)).Methods("GET")
 
 	r.HandleFunc("/quick-summary", func(w http.ResponseWriter, r *http.Request) {
 		handlers.QuickSummaryHandlerWithTemplates(cfg, func(tmplName string, data interface{}) ([]byte, error) {
@@ -281,27 +284,27 @@ func main() {
 	}).Methods("GET")
 
 	r.HandleFunc("/servers", func(w http.ResponseWriter, r *http.Request) {
-		handlers.ServerHandlerWithTemplates(w, r, templates)
+		handlers.ServerHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/servers/{id}", func(w http.ResponseWriter, r *http.Request) {
-		handlers.ServerDetailHandlerWithTemplates(w, r, templates)
+		handlers.ServerDetailHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/vms", func(w http.ResponseWriter, r *http.Request) {
-		handlers.VMHandlerWithTemplates(w, r, templates)
+		handlers.VMHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/vms/{id}", func(w http.ResponseWriter, r *http.Request) {
-		handlers.VMDetailHandlerWithTemplates(w, r, templates)
+		handlers.VMDetailHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/switches", func(w http.ResponseWriter, r *http.Request) {
-		handlers.SwitchesHandler(templates)(w, r)
+		handlers.SwitchesHandler(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/switches/{id}", func(w http.ResponseWriter, r *http.Request) {
-		handlers.SwitchDetailHandler(templates)(w, r)
+		handlers.SwitchDetailHandler(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	r.HandleFunc("/synthetics", func(w http.ResponseWriter, r *http.Request) {
@@ -309,7 +312,7 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		handlers.SyntheticHandlerWithTemplates(w, r, templates)
+		handlers.SyntheticHandlerWithTemplates(cfg, templates)(w, r)
 	}).Methods("GET")
 
 	// Monitoring control API endpoints
@@ -416,7 +419,7 @@ func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 func setupLogging(cfg *config.Config) error {
 	// Determine log directory based on environment
 	logDir := cfg.Logging.Directory
-	
+
 	// In development mode, use relative path from current directory
 	// In production mode, use absolute path (e.g., /var/log/server-dashboard)
 	if cfg.Environment == "development" {
@@ -428,7 +431,7 @@ func setupLogging(cfg *config.Config) error {
 			logDir = "./logs"
 		}
 	}
-	
+
 	// Create log directory if it doesn't exist
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		// If we can't create the configured directory, fall back to current directory
@@ -441,11 +444,11 @@ func setupLogging(cfg *config.Config) error {
 	// Set up file rotation
 	fileLogger := &lumberjack.Logger{
 		Filename:   logFile,
-		MaxSize:    cfg.Logging.MaxSizeMB,    // megabytes
-		MaxBackups: cfg.Logging.MaxBackups,   // number of backups
-		MaxAge:     cfg.Logging.MaxAgeDays,   // days
-		Compress:   cfg.Logging.Compress,     // compress old files
-		LocalTime:  true,                     // use local time for filenames
+		MaxSize:    cfg.Logging.MaxSizeMB,  // megabytes
+		MaxBackups: cfg.Logging.MaxBackups, // number of backups
+		MaxAge:     cfg.Logging.MaxAgeDays, // days
+		Compress:   cfg.Logging.Compress,   // compress old files
+		LocalTime:  true,                   // use local time for filenames
 	}
 
 	// Create multi-writer for both file and console

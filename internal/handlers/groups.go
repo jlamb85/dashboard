@@ -47,6 +47,7 @@ func GroupsPageHandler(cfg *config.Config, templates *template.Template, configP
 
 			data := map[string]interface{}{
 				"Username":      username,
+				"IsAdmin":       isAdminUser(cfg, username),
 				"UsedGroups":    usedGroups,
 				"DefinedGroups": definedGroups,
 				"GroupMembers":  groupMembers,

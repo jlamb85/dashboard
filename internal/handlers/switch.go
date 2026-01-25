@@ -3,14 +3,18 @@ package handlers
 import (
 	"html/template"
 	"net/http"
+	"server-dashboard/internal/config"
+	"server-dashboard/internal/middleware"
 	"server-dashboard/internal/services"
 
 	"github.com/gorilla/mux"
 )
 
 // SwitchesHandler shows the list of all switches
-func SwitchesHandler(templates *template.Template) http.HandlerFunc {
+func SwitchesHandler(cfg *config.Config, templates *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		username, _ := middleware.GetUsername(r)
+
 		switches, err := services.GetAllSwitches()
 		if err != nil {
 			http.Error(w, "Failed to retrieve switches", http.StatusInternalServerError)
@@ -19,6 +23,8 @@ func SwitchesHandler(templates *template.Template) http.HandlerFunc {
 
 		data := map[string]interface{}{
 			"switches": switches,
+			"IsAdmin":  isAdminUser(cfg, username),
+			"Username": username,
 		}
 
 		if err := templates.ExecuteTemplate(w, "switches.html", data); err != nil {
@@ -28,8 +34,10 @@ func SwitchesHandler(templates *template.Template) http.HandlerFunc {
 }
 
 // SwitchDetailHandler shows details for a specific switch
-func SwitchDetailHandler(templates *template.Template) http.HandlerFunc {
+func SwitchDetailHandler(cfg *config.Config, templates *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		username, _ := middleware.GetUsername(r)
+
 		// Get switch ID from URL path parameters
 		vars := mux.Vars(r)
 		switchID := vars["id"]
@@ -59,7 +67,9 @@ func SwitchDetailHandler(templates *template.Template) http.HandlerFunc {
 		}
 
 		data := map[string]interface{}{
-			"switch": *targetSwitch,
+			"switch":   *targetSwitch,
+			"IsAdmin":  isAdminUser(cfg, username),
+			"Username": username,
 		}
 
 		if err := templates.ExecuteTemplate(w, "switch-detail.html", data); err != nil {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"server-dashboard/internal/config"
+	"server-dashboard/internal/middleware"
 	"server-dashboard/internal/services"
 )
 
@@ -15,6 +16,8 @@ const itemsPerPage = 25
 
 func QuickSummaryHandlerWithTemplates(cfg *config.Config, tmplExec func(string, interface{}) ([]byte, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		username, _ := middleware.GetUsername(r)
+
 		servers, err := services.GetAllServers()
 		if err != nil {
 			fmt.Fprintf(w, "Error fetching servers: %v\n", err)
@@ -87,20 +90,19 @@ func QuickSummaryHandlerWithTemplates(cfg *config.Config, tmplExec func(string, 
 		switchesPageData := switches[switchesStart:switchesEnd]
 
 		data := map[string]interface{}{
-			"ActiveTab":            activeTab,
-			"servers":              servers,
-			"serversPage":          serversPageData,
-			"ServersCurrentPage":   serversPage,
-			"ServersTotalPages":    serversTotalPages,
-			"vms":                  vms,
-			"vmsPage":              vmsPageData,
-			"VMsCurrentPage":       vmsPage,
-			"VMsTotalPages":        vmsTotalPages,
-			"switches":             switches,
-			"switchesPage":         switchesPageData,
-			"SwitchesCurrentPage":  switchesPage,
-			"SwitchesTotalPages":   switchesTotalPages,
-		}
+			"ActiveTab":           activeTab,
+			"servers":             servers,
+			"serversPage":         serversPageData,
+			"ServersCurrentPage":  serversPage,
+			"ServersTotalPages":   serversTotalPages,
+			"vms":                 vms,
+			"vmsPage":             vmsPageData,
+			"VMsCurrentPage":      vmsPage,
+			"VMsTotalPages":       vmsTotalPages,
+			"switches":            switches,
+			"switchesPage":        switchesPageData,
+			"SwitchesCurrentPage": switchesPage,
+			"SwitchesTotalPages":  switchesTotalPages, "IsAdmin": isAdminUser(cfg, username), "Username": username}
 
 		html, err := tmplExec("quick-summary.html", data)
 		if err != nil {

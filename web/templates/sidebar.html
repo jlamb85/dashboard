@@ -1,0 +1,80 @@
+{{/* Sidebar partial for dashboard UI */}}
+<nav class="col-lg-2 d-none d-lg-block" id="sidebar-nav" aria-label="Sidebar Navigation">
+    <div class="sidebar">
+        <ul class="nav flex-column gap-2">
+            <li class="nav-item">
+                <a class="nav-link" href="/" data-page="dashboard">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/quick-summary" data-page="quick-summary">
+                    <i class="bi bi-table"></i> Quick Summary
+                </a>
+            </li>
+            <li class="nav-item">
+                    <a class="nav-link" href="/servers" data-page="servers">
+                        <i class="bi bi-server"></i> Servers
+                        <span class="badge bg-primary ms-auto">{{ .ServerCount }}</span>
+                    </a>
+            </li>
+            <li class="nav-item">
+                    <a class="nav-link" href="/vms" data-page="vms">
+                        <i class="bi bi-cpu"></i> Virtual Machines
+                        <span class="badge bg-info ms-auto">{{ .VMCount }}</span>
+                    </a>
+            </li>
+            <li class="nav-item">
+                    <a class="nav-link" href="/switches" data-page="switches">
+                        <i class="bi bi-hdd-rack"></i> Switches
+                        <span class="badge bg-warning ms-auto">{{ .SwitchCount }}</span>
+                    </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link{{if .UIShowSynthetics}} active{{end}}" href="/synthetics" data-page="synthetics">
+                    <i class="bi bi-check-circle"></i> Synthetics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/account/password" data-page="account-password">
+                    <i class="bi bi-key"></i> Change Password
+                </a>
+            </li>
+            {{ if .IsAdmin }}
+            <li class="nav-item">
+                <a class="nav-link" href="/account/users/new" data-page="account-user-new">
+                    <i class="bi bi-person-plus"></i> Create User
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/account/groups" data-page="account-groups">
+                    <i class="bi bi-people"></i> Manage Groups
+                </a>
+            </li>
+            {{ end }}
+            <li class="nav-item">
+                <a class="nav-link" href="/logout" data-page="logout">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </li>
+        </ul>
+        <hr>
+        <div class="small text-muted">
+            <p class="mb-2"><strong>Monitoring Status</strong></p>
+            <div class="d-flex flex-column gap-2" id="monitoring-controls">
+                <span class="badge" id="monitoring-status">Checking...</span>
+                <div class="btn-group-vertical btn-group-sm">
+                    <button class="btn btn-outline-success" id="start-monitoring" title="Start monitoring">
+                        <i class="bi bi-play-fill"></i> Start
+                    </button>
+                    <button class="btn btn-outline-danger" id="stop-monitoring" title="Stop monitoring">
+                        <i class="bi bi-stop-fill"></i> Stop
+                    </button>
+                    <button class="btn btn-outline-warning" id="restart-monitoring" title="Restart monitoring">
+                        <i class="bi bi-arrow-clockwise"></i> Restart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>

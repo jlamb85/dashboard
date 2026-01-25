@@ -6,9 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/crypto/bcrypt"
 	"server-dashboard/internal/config"
 	"server-dashboard/internal/middleware"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserCreatePageHandler lets an admin create new users with bcrypt hashes. It appends
@@ -26,7 +27,7 @@ func UserCreatePageHandler(cfg *config.Config, templates *template.Template, con
 		}
 
 		if r.Method == http.MethodGet {
-			templates.ExecuteTemplate(w, "new-user.html", map[string]interface{}{"Username": username})
+			templates.ExecuteTemplate(w, "new-user.html", map[string]interface{}{"Username": username, "IsAdmin": isAdminUser(cfg, username)})
 			return
 		}
 
@@ -45,21 +46,21 @@ func UserCreatePageHandler(cfg *config.Config, templates *template.Template, con
 		}
 
 		if newUser == "" || password == "" {
-			renderUserError(templates, username, "Username and password are required", w)
+			renderUserError(templates, username, "Username and password are required", w, cfg)
 			return
 		}
 		if password != confirm {
-			renderUserError(templates, username, "Passwords do not match", w)
+			renderUserError(templates, username, "Passwords do not match", w, cfg)
 			return
 		}
 		if userExists(cfg, newUser) {
-			renderUserError(templates, username, "User already exists", w)
+			renderUserError(templates, username, "User already exists", w, cfg)
 			return
 		}
 
 		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
-			renderUserError(templates, username, "Unable to hash password", w)
+			renderUserError(templates, username, "Unable to hash password", w, cfg)
 			return
 		}
 
@@ -74,20 +75,22 @@ func UserCreatePageHandler(cfg *config.Config, templates *template.Template, con
 		}
 
 		if err := appendUser(cfg, configPath, newUser, string(hash), groups); err != nil {
-			renderUserError(templates, username, "Failed to save user", w)
+			renderUserError(templates, username, "Failed to save user", w, cfg)
 			return
 		}
 
 		templates.ExecuteTemplate(w, "new-user.html", map[string]interface{}{
 			"Username": username,
+			"IsAdmin":  isAdminUser(cfg, username),
 			"Success":  "User created with hashed password",
 		})
 	}
 }
 
-func renderUserError(t *template.Template, currentUser, msg string, w http.ResponseWriter) {
+func renderUserError(t *template.Template, currentUser, msg string, w http.ResponseWriter, cfg *config.Config) {
 	t.ExecuteTemplate(w, "new-user.html", map[string]interface{}{
 		"Username": currentUser,
+		"IsAdmin":  isAdminUser(cfg, currentUser),
 		"Error":    msg,
 	})
 }
